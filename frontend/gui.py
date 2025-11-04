@@ -9,6 +9,12 @@ import requests
 from typing import List, Dict, Optional
 import threading
 import json
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from PIL import Image, ImageTk
+import io
 
 # Configure CustomTkinter appearance
 ctk.set_appearance_mode("dark")
@@ -164,20 +170,22 @@ class EduCoreApp:
         self.tabview.pack(fill="both", expand=True)
         
         # Add tabs
-        self.tabview.add("👥 Students")
-        self.tabview.add("📝 Grades")
-        self.tabview.add("📊 Reports")
-        self.tabview.add("📚 Courses")
+        self.tabview.add("Students")
+        self.tabview.add("Grades")
+        self.tabview.add("Reports")
+        self.tabview.add("Analytics")
+        self.tabview.add("Courses")
         
         # Setup each tab
         self.create_students_tab()
         self.create_grades_tab()
         self.create_reports_tab()
+        self.create_analytics_tab()
         self.create_courses_tab()
     
     def create_students_tab(self):
         """Create students management tab"""
-        tab = self.tabview.tab("👥 Students")
+        tab = self.tabview.tab("Students")
         
         # Left panel - Student form
         left_panel = ctk.CTkFrame(tab, width=400)
@@ -355,7 +363,7 @@ class EduCoreApp:
     
     def create_grades_tab(self):
         """Create grades management tab"""
-        tab = self.tabview.tab("📝 Grades")
+        tab = self.tabview.tab("Grades")
         
         # Left panel - Add grade form
         left_panel = ctk.CTkFrame(tab, width=400)
@@ -544,7 +552,7 @@ Grade Scale:
     
     def create_reports_tab(self):
         """Create reports tab"""
-        tab = self.tabview.tab("📊 Reports")
+        tab = self.tabview.tab("Reports")
         
         # Header
         header_frame = ctk.CTkFrame(tab, fg_color="transparent")
@@ -621,9 +629,187 @@ Grade Scale:
         tree_frame.grid_rowconfigure(0, weight=1)
         tree_frame.grid_columnconfigure(0, weight=1)
     
+    def create_analytics_tab(self):
+        """Create analytics dashboard tab with charts"""
+        tab = self.tabview.tab("Analytics")
+        
+        # Header
+        header_frame = ctk.CTkFrame(tab, fg_color="transparent")
+        header_frame.pack(fill="x", padx=15, pady=15)
+        
+        ctk.CTkLabel(
+            header_frame,
+            text="Analytics Dashboard",
+            font=ctk.CTkFont(size=20, weight="bold")
+        ).pack(side="left")
+        
+        ModernButton(
+            header_frame,
+            text="🔄 Refresh Analytics",
+            command=self.refresh_analytics,
+            width=160,
+            height=35
+        ).pack(side="right")
+        
+        # Create canvas with scrollbar for better performance
+        canvas_frame = ctk.CTkFrame(tab)
+        canvas_frame.pack(fill="both", expand=True, padx=15, pady=(0, 15))
+        
+        # Create canvas and scrollbar
+        self.analytics_canvas = tk.Canvas(canvas_frame, bg="#2b2b2b", highlightthickness=0)
+        analytics_scrollbar = ttk.Scrollbar(canvas_frame, orient="vertical", command=self.analytics_canvas.yview)
+        
+        # Create frame inside canvas
+        self.analytics_content = ctk.CTkFrame(self.analytics_canvas, fg_color="transparent")
+        
+        # Configure canvas
+        self.analytics_canvas.configure(yscrollcommand=analytics_scrollbar.set)
+        
+        # Pack scrollbar and canvas
+        analytics_scrollbar.pack(side="right", fill="y")
+        self.analytics_canvas.pack(side="left", fill="both", expand=True)
+        
+        # Create window in canvas
+        self.analytics_window = self.analytics_canvas.create_window((0, 0), window=self.analytics_content, anchor="nw")
+        
+        # Bind configuration events
+        self.analytics_content.bind("<Configure>", lambda e: self.analytics_canvas.configure(scrollregion=self.analytics_canvas.bbox("all")))
+        self.analytics_canvas.bind("<Configure>", lambda e: self.analytics_canvas.itemconfig(self.analytics_window, width=e.width))
+        
+        # Bind mouse wheel for smooth scrolling
+        def _on_mousewheel(event):
+            self.analytics_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        self.analytics_canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        
+        # Statistics Overview
+        stats_frame = ctk.CTkFrame(self.analytics_content)
+        stats_frame.pack(fill="x", pady=(0, 15))
+        
+        ctk.CTkLabel(
+            stats_frame,
+            text="📊 Overview Statistics",
+            font=ctk.CTkFont(size=16, weight="bold")
+        ).pack(anchor="w", padx=15, pady=(15, 10))
+        
+        stats_container = ctk.CTkFrame(stats_frame, fg_color="transparent")
+        stats_container.pack(fill="x", padx=10, pady=(0, 15))
+        
+        # Create stat boxes
+        self.analytics_students_label = self.create_stat_box(
+            stats_container, "Total Students", "0", self.colors['info']
+        )
+        self.analytics_students_label.pack(side="left", expand=True, fill="x", padx=5)
+        
+        self.analytics_courses_label = self.create_stat_box(
+            stats_container, "Total Courses", "0", self.colors['primary']
+        )
+        self.analytics_courses_label.pack(side="left", expand=True, fill="x", padx=5)
+        
+        self.analytics_grades_label = self.create_stat_box(
+            stats_container, "Total Grades", "0", self.colors['warning']
+        )
+        self.analytics_grades_label.pack(side="left", expand=True, fill="x", padx=5)
+        
+        self.analytics_avg_gwa_label = self.create_stat_box(
+            stats_container, "Overall Avg GWA", "0.00", self.colors['success']
+        )
+        self.analytics_avg_gwa_label.pack(side="left", expand=True, fill="x", padx=5)
+        
+        # Charts container
+        charts_frame = ctk.CTkFrame(self.analytics_content)
+        charts_frame.pack(fill="both", expand=True, pady=(0, 15))
+        
+        # Top row - 2 charts
+        top_row = ctk.CTkFrame(charts_frame, fg_color="transparent")
+        top_row.pack(fill="x", padx=10, pady=10)
+        
+        # Course Distribution Chart (left)
+        course_chart_frame = ctk.CTkFrame(top_row, width=400, height=300)
+        course_chart_frame.pack(side="left", fill="both", expand=True, padx=(0, 5))
+        course_chart_frame.pack_propagate(False)
+        
+        ctk.CTkLabel(
+            course_chart_frame,
+            text="Students per Course",
+            font=ctk.CTkFont(size=14, weight="bold")
+        ).pack(pady=(10, 5))
+        
+        self.course_chart_label = ctk.CTkLabel(course_chart_frame, text="")
+        self.course_chart_label.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # Grade Distribution Chart (right)
+        grade_chart_frame = ctk.CTkFrame(top_row, width=400, height=300)
+        grade_chart_frame.pack(side="left", fill="both", expand=True, padx=(5, 0))
+        grade_chart_frame.pack_propagate(False)
+        
+        ctk.CTkLabel(
+            grade_chart_frame,
+            text="Grade Distribution",
+            font=ctk.CTkFont(size=14, weight="bold")
+        ).pack(pady=(10, 5))
+        
+        self.grade_chart_label = ctk.CTkLabel(grade_chart_frame, text="")
+        self.grade_chart_label.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # Bottom row - Course Performance Chart
+        bottom_row = ctk.CTkFrame(charts_frame, fg_color="transparent")
+        bottom_row.pack(fill="x", padx=10, pady=(5, 10))
+        
+        performance_chart_frame = ctk.CTkFrame(bottom_row, height=300)
+        performance_chart_frame.pack(fill="both", expand=True)
+        performance_chart_frame.pack_propagate(False)
+        
+        ctk.CTkLabel(
+            performance_chart_frame,
+            text="Average GWA per Course",
+            font=ctk.CTkFont(size=14, weight="bold")
+        ).pack(pady=(10, 5))
+        
+        self.performance_chart_label = ctk.CTkLabel(performance_chart_frame, text="")
+        self.performance_chart_label.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # Top Performers List
+        top_performers_frame = ctk.CTkFrame(self.analytics_content)
+        top_performers_frame.pack(fill="x", pady=(0, 15))
+        
+        ctk.CTkLabel(
+            top_performers_frame,
+            text="🏆 Top 10 Performers (GWA ≤ 1.75)",
+            font=ctk.CTkFont(size=16, weight="bold")
+        ).pack(anchor="w", padx=15, pady=(15, 10))
+        
+        # Treeview for top performers
+        tree_container = ctk.CTkFrame(top_performers_frame)
+        tree_container.pack(fill="x", padx=15, pady=(0, 15))
+        
+        self.top_performers_tree = ttk.Treeview(
+            tree_container,
+            columns=("Rank", "Code", "Name", "Course", "GWA"),
+            show="headings",
+            height=10
+        )
+        
+        self.top_performers_tree.heading("Rank", text="Rank")
+        self.top_performers_tree.heading("Code", text="Student Code")
+        self.top_performers_tree.heading("Name", text="Full Name")
+        self.top_performers_tree.heading("Course", text="Course")
+        self.top_performers_tree.heading("GWA", text="GWA")
+        
+        self.top_performers_tree.column("Rank", width=60, anchor="center")
+        self.top_performers_tree.column("Code", width=120, anchor="center")
+        self.top_performers_tree.column("Name", width=300)
+        self.top_performers_tree.column("Course", width=100, anchor="center")
+        self.top_performers_tree.column("GWA", width=100, anchor="center")
+        
+        vsb = ttk.Scrollbar(tree_container, orient="vertical", command=self.top_performers_tree.yview)
+        self.top_performers_tree.configure(yscrollcommand=vsb.set)
+        
+        self.top_performers_tree.pack(side="left", fill="both", expand=True, padx=(10, 0), pady=10)
+        vsb.pack(side="right", fill="y", pady=10)
+    
     def create_courses_tab(self):
         """Create courses reference tab"""
-        tab = self.tabview.tab("📚 Courses")
+        tab = self.tabview.tab("Courses")
         
         # Header
         header_frame = ctk.CTkFrame(tab, fg_color="transparent")
@@ -1008,6 +1194,161 @@ Grade Scale:
                 student['description']
             ))
     
+    def refresh_analytics(self):
+        """Refresh analytics dashboard"""
+        def refresh():
+            result = self.api.get("/analytics/overview")
+            
+            if 'error' not in result:
+                self.root.after(0, lambda: self.update_analytics_dashboard(result))
+            else:
+                self.root.after(0, lambda: self.show_error("Failed to load analytics", result['error']))
+        
+        threading.Thread(target=refresh, daemon=True).start()
+    
+    def update_analytics_dashboard(self, data):
+        """Update analytics dashboard with data and charts"""
+        # Update statistics
+        self.analytics_students_label.value_label.configure(text=str(data['total_students']))
+        self.analytics_courses_label.value_label.configure(text=str(data['total_courses']))
+        self.analytics_grades_label.value_label.configure(text=str(data['total_grades']))
+        self.analytics_avg_gwa_label.value_label.configure(
+            text=f"{data['overall_avg_gwa']:.2f}" if data['overall_avg_gwa'] > 0 else "N/A"
+        )
+        
+        # Generate and display charts
+        self.generate_course_distribution_chart(data['course_distribution'])
+        self.generate_grade_distribution_chart(data['grade_distribution'])
+        self.generate_course_performance_chart(data['course_performance'])
+        
+        # Update top performers
+        self.update_top_performers(data['top_students'])
+    
+    def generate_course_distribution_chart(self, course_data):
+        """Generate pie chart for students per course"""
+        if not course_data:
+            return
+        
+        # Set dark theme for matplotlib
+        plt.style.use('dark_background')
+        
+        fig, ax = plt.subplots(figsize=(5, 3.5), facecolor='#2b2b2b', dpi=80)
+        ax.set_facecolor('#2b2b2b')
+        
+        courses = [item['course'] for item in course_data]
+        counts = [item['count'] for item in course_data]
+        
+        colors = ['#1f538d', '#2ecc71', '#f39c12', '#e74c3c', '#9b59b6']
+        
+        ax.pie(counts, labels=courses, autopct='%1.1f%%', startangle=90, colors=colors[:len(courses)])
+        ax.axis('equal')
+        
+        # Convert to image
+        self.display_chart(fig, self.course_chart_label)
+    
+    def generate_grade_distribution_chart(self, grade_data):
+        """Generate bar chart for grade distribution"""
+        if not grade_data:
+            return
+        
+        plt.style.use('dark_background')
+        
+        fig, ax = plt.subplots(figsize=(5, 3.5), facecolor='#2b2b2b', dpi=80)
+        ax.set_facecolor('#2b2b2b')
+        
+        ranges = [item['range'] for item in grade_data]
+        counts = [item['count'] for item in grade_data]
+        
+        colors = ['#2ecc71', '#3498db', '#f39c12', '#e67e22', '#e74c3c']
+        
+        bars = ax.bar(range(len(ranges)), counts, color=colors)
+        ax.set_xticks(range(len(ranges)))
+        ax.set_xticklabels([r.split(' (')[0] for r in ranges], rotation=45, ha='right', fontsize=8)
+        ax.set_ylabel('Number of Grades', fontsize=9)
+        ax.set_title('Grade Distribution', fontsize=10)
+        
+        # Add value labels on bars
+        for bar in bars:
+            height = bar.get_height()
+            if height > 0:
+                ax.text(bar.get_x() + bar.get_width()/2., height,
+                       f'{int(height)}',
+                       ha='center', va='bottom', fontsize=8)
+        
+        plt.tight_layout()
+        self.display_chart(fig, self.grade_chart_label)
+    
+    def generate_course_performance_chart(self, performance_data):
+        """Generate bar chart for average GWA per course"""
+        if not performance_data:
+            return
+        
+        plt.style.use('dark_background')
+        
+        fig, ax = plt.subplots(figsize=(7, 3.5), facecolor='#2b2b2b', dpi=80)
+        ax.set_facecolor('#2b2b2b')
+        
+        courses = [item['course'] for item in performance_data]
+        avg_gwas = [item['avg_gwa'] for item in performance_data]
+        
+        colors = ['#2ecc71' if gwa <= 1.75 else '#3498db' if gwa <= 2.5 else '#f39c12' 
+                  for gwa in avg_gwas]
+        
+        bars = ax.bar(courses, avg_gwas, color=colors)
+        ax.set_ylabel('Average GWA', fontsize=9)
+        ax.set_title('Average GWA per Course', fontsize=10)
+        ax.set_ylim(0, max(avg_gwas) + 0.5 if avg_gwas else 5)
+        
+        # Add value labels on bars
+        for bar in bars:
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2., height,
+                   f'{height:.2f}',
+                   ha='center', va='bottom', fontsize=8)
+        
+        # Add reference lines
+        ax.axhline(y=1.75, color='#2ecc71', linestyle='--', alpha=0.5, label='Excellent')
+        ax.axhline(y=2.5, color='#3498db', linestyle='--', alpha=0.5, label='Good')
+        ax.axhline(y=3.0, color='#f39c12', linestyle='--', alpha=0.5, label='Satisfactory')
+        ax.legend(fontsize=8)
+        
+        plt.tight_layout()
+        self.display_chart(fig, self.performance_chart_label)
+    
+    def display_chart(self, fig, label_widget):
+        """Convert matplotlib figure to image and display in label"""
+        # Save figure to bytes buffer with optimized DPI for performance
+        buf = io.BytesIO()
+        fig.savefig(buf, format='png', dpi=80, facecolor='#2b2b2b', bbox_inches='tight')
+        buf.seek(0)
+        plt.close(fig)
+        
+        # Convert to PhotoImage
+        image = Image.open(buf)
+        # Resize for better fit if needed
+        photo = ImageTk.PhotoImage(image)
+        
+        # Update label
+        label_widget.configure(image=photo, text="")
+        label_widget.image = photo  # Keep a reference to prevent garbage collection
+        buf.close()  # Clean up buffer
+    
+    def update_top_performers(self, top_students):
+        """Update top performers treeview"""
+        # Clear existing items
+        for item in self.top_performers_tree.get_children():
+            self.top_performers_tree.delete(item)
+        
+        # Add top students
+        for rank, student in enumerate(top_students, 1):
+            self.top_performers_tree.insert("", "end", values=(
+                f"#{rank}",
+                student['student_code'],
+                student['name'],
+                student['course_code'],
+                f"{student['gwa']:.2f}"
+            ))
+    
     # ==================== Helper Methods ====================
     
     def get_grade_description(self, grade: float) -> str:
@@ -1125,3 +1466,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

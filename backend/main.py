@@ -327,6 +327,92 @@ def format_grade(grade: float) -> str:
     return f"{grade:.2f}"
 
 
+# ==================== Analytics Endpoints ====================
+
+@app.get("/api/analytics/overview")
+def get_analytics_overview(db: Session = Depends(get_db)):
+    """Get overview statistics for analytics dashboard"""
+    from sqlalchemy import func
+    
+    # Total counts
+    total_students = db.query(Student).count()
+    total_courses = db.query(Course).count()
+    total_grades = db.query(Grade).count()
+    
+    # Average GWA across all students
+    avg_gwa = db.query(func.avg(Student.gwa)).filter(Student.gwa > 0).scalar()
+    avg_gwa = round(float(avg_gwa), 2) if avg_gwa else 0.0
+    
+    # Students per course
+    students_per_course = db.query(
+        Student.course_code,
+        func.count(Student.id).label('count')
+    ).group_by(Student.course_code).all()
+    
+    course_distribution = [
+        {"course": course, "count": count}
+        for course, count in students_per_course
+    ]
+    
+    # Grade distribution
+    grade_ranges = [
+        {"range": "1.0 (Excellent)", "min": 1.0, "max": 1.0},
+        {"range": "1.25-1.75 (Very Good)", "min": 1.25, "max": 1.75},
+        {"range": "2.0-2.5 (Good)", "min": 2.0, "max": 2.5},
+        {"range": "2.75-3.0 (Satisfactory)", "min": 2.75, "max": 3.0},
+        {"range": "3.0+ (Failed)", "min": 3.0, "max": 5.0}
+    ]
+    
+    grade_distribution = []
+    for grade_range in grade_ranges:
+        count = db.query(Grade).filter(
+            Grade.grade >= grade_range["min"],
+            Grade.grade <= grade_range["max"]
+        ).count()
+        grade_distribution.append({
+            "range": grade_range["range"],
+            "count": count
+        })
+    
+    # Top performers (students with GWA <= 1.75)
+    top_performers = db.query(Student).filter(
+        Student.gwa > 0,
+        Student.gwa <= 1.75
+    ).order_by(Student.gwa).limit(10).all()
+    
+    top_students = [
+        {
+            "student_code": s.student_code,
+            "name": s.name,
+            "course_code": s.course_code,
+            "gwa": round(s.gwa, 2)
+        }
+        for s in top_performers
+    ]
+    
+    # GWA per course
+    gwa_per_course = db.query(
+        Student.course_code,
+        func.avg(Student.gwa).label('avg_gwa')
+    ).filter(Student.gwa > 0).group_by(Student.course_code).all()
+    
+    course_performance = [
+        {"course": course, "avg_gwa": round(float(avg), 2)}
+        for course, avg in gwa_per_course
+    ]
+    
+    return {
+        "total_students": total_students,
+        "total_courses": total_courses,
+        "total_grades": total_grades,
+        "overall_avg_gwa": avg_gwa,
+        "course_distribution": course_distribution,
+        "grade_distribution": grade_distribution,
+        "top_students": top_students,
+        "course_performance": course_performance
+    }
+
+
 @app.get("/")
 def root():
     """Root endpoint"""
