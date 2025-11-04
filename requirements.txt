@@ -1,0 +1,9 @@
+# Core dependencies - Python 3.13 compatible (pre-built wheels)
+fastapi==0.111.0
+uvicorn==0.30.0
+sqlalchemy==2.0.36
+mysql-connector-python==9.0.0
+pydantic==2.12.3
+python-dotenv==1.0.0
+requests==2.31.0
+customtkinter==5.2.1
