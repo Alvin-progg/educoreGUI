@@ -101,11 +101,13 @@ class EduCoreApp:
         # Color scheme
         self.colors = {
             'primary': '#1f538d',
+            'primary_dark': '#14375e',
             'secondary': '#14375e',
             'success': '#2ecc71',
             'danger': '#e74c3c',
             'warning': '#f39c12',
-            'info': '#3498db'
+            'info': '#3498db',
+            'border': '#3a3a3a'
         }
         
         self.setup_ui()
@@ -371,28 +373,52 @@ class EduCoreApp:
         ).pack(pady=(10, 15))
         
         # Student Code
-        ctk.CTkLabel(add_section, text="Student Code", font=ctk.CTkFont(size=12)).pack(anchor="w", padx=10)
+        student_code_label_frame = ctk.CTkFrame(add_section, fg_color="transparent")
+        student_code_label_frame.pack(fill="x", padx=10, anchor="w")
+        ctk.CTkLabel(student_code_label_frame, text="Student Code", font=ctk.CTkFont(size=12)).pack(side="left")
+        ctk.CTkLabel(student_code_label_frame, text="(Press Enter to load subjects)", 
+                    font=ctk.CTkFont(size=9), text_color="gray60").pack(side="left", padx=(5, 0))
+        
         self.grade_student_code_entry = ModernEntry(
             add_section,
             placeholder_text="e.g., 24-49051"
         )
         self.grade_student_code_entry.pack(fill="x", padx=10, pady=(5, 10))
+        self.grade_student_code_entry.bind("<Return>", lambda e: self.load_subjects_for_student())
         
-        # Subject Code
-        ctk.CTkLabel(add_section, text="Subject Code", font=ctk.CTkFont(size=12)).pack(anchor="w", padx=10)
-        self.subject_code_entry = ModernEntry(
+        # Subject Code (with autocomplete dropdown)
+        subject_label_frame = ctk.CTkFrame(add_section, fg_color="transparent")
+        subject_label_frame.pack(fill="x", padx=10, anchor="w")
+        ctk.CTkLabel(subject_label_frame, text="Subject Code", font=ctk.CTkFont(size=12)).pack(side="left")
+        ctk.CTkLabel(subject_label_frame, text="(Select from dropdown)", 
+                    font=ctk.CTkFont(size=9), text_color="gray60").pack(side="left", padx=(5, 0))
+        
+        self.subject_code_combobox = ctk.CTkComboBox(
             add_section,
-            placeholder_text="e.g., CS 131"
+            values=["Enter student code first..."],
+            command=self.on_subject_selected,
+            state="readonly",
+            font=ctk.CTkFont(size=12),
+            dropdown_font=ctk.CTkFont(size=11),
+            height=35,
+            button_color=self.colors['primary'],
+            button_hover_color=self.colors['primary_dark'],
+            border_color=self.colors['border']
         )
-        self.subject_code_entry.pack(fill="x", padx=10, pady=(5, 10))
+        self.subject_code_combobox.pack(fill="x", padx=10, pady=(5, 10))
+        self.subject_code_combobox.set("Select a subject code...")
         
-        # Subject Name
+        # Store subject data for auto-fill
+        self.subjects_data = {}
+        
+        # Subject Name (auto-filled, read-only)
         ctk.CTkLabel(add_section, text="Subject Name", font=ctk.CTkFont(size=12)).pack(anchor="w", padx=10)
         self.subject_name_entry = ModernEntry(
             add_section,
-            placeholder_text="Enter subject name"
+            placeholder_text="Auto-filled when subject is selected"
         )
         self.subject_name_entry.pack(fill="x", padx=10, pady=(5, 10))
+        self.subject_name_entry.configure(state="disabled")  # Make it read-only
         
         # Grade
         ctk.CTkLabel(add_section, text="Grade (1.0 - 5.0)", font=ctk.CTkFont(size=12)).pack(anchor="w", padx=10)
@@ -844,8 +870,16 @@ Grade Scale:
     def add_grade(self):
         """Add a grade for a student"""
         student_code = self.grade_student_code_entry.get().strip()
-        subject_code = self.subject_code_entry.get().strip()
-        subject_name = self.subject_name_entry.get().strip()
+        subject_code = self.subject_code_combobox.get().strip()
+        
+        # Check if a valid subject is selected
+        if subject_code in ["Enter student code first...", "Select a subject code...", "No subjects available"]:
+            self.show_error("Validation Error", "Please select a valid subject code")
+            return
+        
+        # Get subject name from stored data
+        subject_name = self.subjects_data.get(subject_code, "")
+        
         grade_str = self.grade_entry.get().strip()
         
         if not all([student_code, subject_code, subject_name, grade_str]):
@@ -906,7 +940,8 @@ Grade Scale:
         """Update grades display with student info"""
         # Update info label
         gwa = student_info.get('gwa', 0)
-        info_text = f"Student: {student_info['name']} ({student_info['student_code']}) | Course: {student_info['course_code']} | GWA: {gwa:.2f if gwa > 0 else 'N/A'}"
+        gwa_display = f"{gwa:.2f}" if gwa > 0 else "N/A"
+        info_text = f"Student: {student_info['name']} ({student_info['student_code']}) | Course: {student_info['course_code']} | GWA: {gwa_display}"
         self.student_info_label.configure(text=info_text, text_color="white")
         
         # Update tree
@@ -995,12 +1030,72 @@ Grade Scale:
         self.student_code_entry.delete(0, 'end')
         self.name_entry.delete(0, 'end')
     
+    def load_subjects_for_student(self):
+        """Load subjects based on student's course"""
+        student_code = self.grade_student_code_entry.get().strip()
+        
+        if not student_code:
+            self.show_error("Validation Error", "Please enter a student code")
+            return
+        
+        def load():
+            # Get student info to find their course
+            student_result = self.api.get(f"/students/{student_code}")
+            
+            if 'error' in student_result:
+                self.root.after(0, lambda: self.show_error("Student Not Found", 
+                    "Could not find student with that code. Please check and try again."))
+                self.root.after(0, lambda: self.subject_code_combobox.configure(values=["Student not found"]))
+                self.root.after(0, lambda: self.subject_code_combobox.set("Student not found"))
+                return
+            
+            course_code = student_result.get('course_code')
+            
+            # Get subjects for this course
+            subjects_result = self.api.get(f"/courses/{course_code}/subjects")
+            
+            if 'error' in subjects_result or not subjects_result:
+                self.root.after(0, lambda: self.show_error("No Subjects", 
+                    f"No subjects found for course {course_code}"))
+                self.root.after(0, lambda: self.subject_code_combobox.configure(values=["No subjects available"]))
+                self.root.after(0, lambda: self.subject_code_combobox.set("No subjects available"))
+                return
+            
+            # Store subject data and prepare dropdown values
+            self.subjects_data = {}
+            subject_codes = []
+            for subject in subjects_result:
+                subject_code = subject['subject_code']
+                subject_name = subject['subject_name']
+                self.subjects_data[subject_code] = subject_name
+                subject_codes.append(subject_code)
+            
+            # Update combobox
+            self.root.after(0, lambda: self.subject_code_combobox.configure(values=subject_codes))
+            self.root.after(0, lambda: self.subject_code_combobox.set("Select a subject code..."))
+            self.root.after(0, lambda: self.show_success(f"Loaded {len(subject_codes)} subjects for {course_code}"))
+        
+        threading.Thread(target=load, daemon=True).start()
+    
+    def on_subject_selected(self, selected_code):
+        """Handle subject code selection - auto-fill subject name"""
+        if selected_code in self.subjects_data:
+            subject_name = self.subjects_data[selected_code]
+            # Temporarily enable the entry to update it
+            self.subject_name_entry.configure(state="normal")
+            self.subject_name_entry.delete(0, 'end')
+            self.subject_name_entry.insert(0, subject_name)
+            self.subject_name_entry.configure(state="disabled")
+    
     def clear_grade_form(self):
         """Clear grade form fields"""
         self.grade_student_code_entry.delete(0, 'end')
-        self.subject_code_entry.delete(0, 'end')
+        self.subject_code_combobox.set("Select a subject code...")
+        self.subject_name_entry.configure(state="normal")
         self.subject_name_entry.delete(0, 'end')
+        self.subject_name_entry.configure(state="disabled")
         self.grade_entry.delete(0, 'end')
+        self.subjects_data = {}
     
     def show_success(self, message):
         """Show success message"""
