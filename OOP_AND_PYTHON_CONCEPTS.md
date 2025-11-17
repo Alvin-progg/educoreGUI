@@ -1,7 +1,7 @@
 # EduCore Project: OOP and Advanced Python Concepts
 
 ## Overview
-This document outlines the Object-Oriented Programming (OOP) concepts and advanced Python features used in the EduCore Academic Management System project.
+This document outlines the Object-Oriented Programming (OOP) concepts and advanced Python features used in the EduCore Academic Management System v2.0 project with Authentication and QR Code features.
 
 ---
 
@@ -9,8 +9,8 @@ This document outlines the Object-Oriented Programming (OOP) concepts and advanc
 
 | **Concept** | **Definition** | **Where Used** | **Code Example from Project** |
 |-------------|----------------|----------------|-------------------------------|
-| **Class** | Blueprint for creating objects with attributes and methods | `models.py`: `Student`, `Course`, `Grade`, `CourseSubject`<br>`schemas.py`: `StudentCreate`, `GradeResponse`, etc.<br>`gui.py`: `APIClient`, `ModernButton`, `EduCoreApp` | `class Student(Base):`<br>`    __tablename__ = "students"`<br>`    id = Column(Integer, primary_key=True)` |
-| **Inheritance** | Mechanism where a class derives properties/methods from parent class | `models.py`: All models inherit from `Base`<br>`schemas.py`: `StudentCreate(StudentBase)`, `StudentUpdate(BaseModel)`<br>`gui.py`: `ModernButton(ctk.CTkButton)`, `ModernEntry(ctk.CTkEntry)` | `class Student(Base):`<br>`    """Student model"""` |
+| **Class** | Blueprint for creating objects with attributes and methods | `models.py`: `Student`, `Course`, `Grade`, `CourseSubject`, `User`<br>`schemas.py`: `StudentCreate`, `GradeResponse`, `LoginRequest`, `LoginResponse`<br>`gui.py`: `APIClient`, `ModernButton`, `LoginWindow`, `EduCoreApp` | `class Student(Base):`<br>`    __tablename__ = "students"`<br>`    id = Column(Integer, primary_key=True)`<br><br>`class User(Base):`<br>`    __tablename__ = "users"`<br>`    username = Column(String(50), unique=True)` |
+| **Inheritance** | Mechanism where a class derives properties/methods from parent class | `models.py`: All models inherit from `Base` (Student, Course, Grade, User)<br>`schemas.py`: `StudentCreate(StudentBase)`, `StudentUpdate(BaseModel)`, `LoginRequest(BaseModel)`<br>`gui.py`: `ModernButton(ctk.CTkButton)`, `ModernEntry(ctk.CTkEntry)`, `LoginWindow` creates CTk window | `class Student(Base):`<br>`    """Student model"""`<br><br>`class User(Base):`<br>`    """User authentication model"""` |
 | **Encapsulation** | Bundling data and methods within a class; controlling access via private/public attributes | `gui.py`: `APIClient` encapsulates HTTP logic<br>`models.py`: Private attributes with SQLAlchemy columns<br>`gui.py`: `self.colors`, `self.students`, `self.api` | `class APIClient:`<br>`    def __init__(self, base_url="http://..."):`<br>`        self.base_url = base_url`<br>`        self.timeout = 10` |
 | **Polymorphism** | Ability of different classes to be used through same interface | `gui.py`: `ModernButton` and `ModernEntry` override parent constructors<br>`schemas.py`: Multiple schema classes share `BaseModel` interface | `class ModernButton(ctk.CTkButton):`<br>`    def __init__(self, master, **kwargs):`<br>`        super().__init__(master, corner_radius=8, ...)` |
 | **Method** | Function defined inside a class | `main.py`: `get_all_students()`, `add_student()`, `update_student_gwa()`<br>`gui.py`: `setup_ui()`, `add_student()`, `refresh_students()`<br>`schemas.py`: `validate_grade()` | `def add_student(student: StudentCreate, db: Session):`<br>`    existing = db.query(Student).filter(...).first()`<br>`    if existing:`<br>`        raise HTTPException(...)` |
@@ -44,6 +44,18 @@ This document outlines the Object-Oriented Programming (OOP) concepts and advanc
 | **GUI Widget Inheritance** | Creating custom widgets by extending tkinter/customtkinter | `gui.py`: `ModernButton(ctk.CTkButton)`, `ModernEntry(ctk.CTkEntry)` | `class ModernButton(ctk.CTkButton):`<br>`    def __init__(self, master, **kwargs):`<br>`        super().__init__(master, corner_radius=8, ...)` |
 | **Event Binding** | Connecting GUI events to handler functions | `gui.py`: `.bind("<Return>", lambda e: ...)`, `command=self.add_student` | `self.grade_student_code_entry.bind("<Return>", lambda e: self.load_subjects_for_student())` |
 | **Super() Function** | Calls parent class methods | `gui.py`: `super().__init__()` in custom widgets | `super().__init__(master, corner_radius=8, font=..., **kwargs)` |
+| **Password Hashing** 🔐 | Encrypting passwords using bcrypt algorithm | `main.py`: `pwd_context.hash()`, `pwd_context.verify()` | `password_hash = pwd_context.hash(password)`<br>`is_valid = pwd_context.verify(plain_password, hashed)` |
+| **Authentication** 🔐 | User login validation system | `main.py`: `/api/auth/login` endpoint<br>`gui.py`: `LoginWindow` class | `@app.post("/api/auth/login")`<br>`def login(credentials: LoginRequest, db: Session):` |
+| **Modal Window** 🔐 | Separate window for specific task | `gui.py`: `LoginWindow` creates login dialog | `self.window = ctk.CTk()`<br>`self.window.geometry("550x700")`<br>`self.window.mainloop()` |
+| **QR Code Generation** 📱 | Creating QR codes from data | `gui.py`: `generate_qr_code()` method using qrcode library | `qr = qrcode.QRCode(...)`<br>`qr.add_data(student_code)`<br>`img = qr.make_image()`<br>`img.save(filepath)` |
+| **Camera Access** 📱 | Opening and reading from webcam | `gui.py`: `scan_qr_code()` using OpenCV | `cap = cv2.VideoCapture(0)`<br>`ret, frame = cap.read()`<br>`cap.release()` |
+| **QR Code Decoding** 📱 | Reading and extracting data from QR codes | `gui.py`: Using pyzbar to decode QR from camera | `decoded_objects = decode(frame)`<br>`qr_data = obj.data.decode('utf-8')` |
+| **Image Processing** 📱 | Manipulating images and video frames | `gui.py`: OpenCV frame processing and PIL image operations | `cv2.polylines(frame, [pts], True, (0, 255, 0), 3)`<br>`img.resize((300, 300), Image.Resampling.LANCZOS)` |
+| **File I/O** 📱 | Reading and writing files | `gui.py`: Saving QR codes as PNG files | `img.save(filepath)`<br>`img = Image.open(filepath)`<br>`os.path.exists(filepath)` |
+| **Threading** 📱 | Running code in background threads | `gui.py`: Background operations for API calls and scanning | `threading.Thread(target=scan, daemon=True).start()` |
+| **Window Destruction** | Closing and removing GUI windows | `gui.py`: Destroying login window after authentication | `self.window.after(0, self.window.destroy)` |
+| **Boolean State** | Using flags to track application state | `gui.py`: `login_successful` flag in LoginWindow | `self.login_successful = False`<br>`if not success: return` |
+| **Password Visibility Toggle** | Show/hide password in input field | `gui.py`: Checkbox controlling password display | `if self.show_password_var.get():`<br>`    self.password_entry.configure(show="")`<br>`else:`<br>`    self.password_entry.configure(show="•")` |
 
 ---
 
@@ -109,12 +121,16 @@ This document outlines the Object-Oriented Programming (OOP) concepts and advanc
 ### Backend (`backend/`)
 
 #### `models.py`
+- **`User`**: 🔐 NEW! Authentication model with username, password_hash, role
 - **`Student`**: Represents a student with code, name, course, and GWA
 - **`Course`**: Represents a course program (BSIT, BSCS, BSBA)
 - **`CourseSubject`**: Maps subjects to courses
 - **`Grade`**: Stores student grades for subjects
 
 #### `schemas.py`
+- **`LoginRequest`**: 🔐 NEW! Schema for login credentials
+- **`LoginResponse`**: 🔐 NEW! Response format for authentication
+- **`UserResponse`**: 🔐 NEW! User data response format
 - **`StudentCreate`**: Validation schema for creating students
 - **`StudentResponse`**: Response format for student data
 - **`GradeCreate`**: Validation schema for grade input
@@ -132,7 +148,8 @@ This document outlines the Object-Oriented Programming (OOP) concepts and advanc
 - **`APIClient`**: Handles HTTP communication with backend
 - **`ModernButton`**: Custom styled button widget
 - **`ModernEntry`**: Custom styled entry widget
-- **`EduCoreApp`**: Main application class with GUI
+- **`LoginWindow`**: 🔐 NEW! Authentication window class
+- **`EduCoreApp`**: Main application class with GUI and QR code features
 
 ---
 
@@ -181,15 +198,19 @@ This document outlines the Object-Oriented Programming (OOP) concepts and advanc
 ## Project Architecture
 
 ```
-EduCore System
+EduCore System v2.0
 ├── Backend (FastAPI)
 │   ├── Database Layer (SQLAlchemy ORM)
-│   ├── Models (Student, Course, Grade)
+│   ├── Models (User, Student, Course, Grade)
 │   ├── Schemas (Pydantic validation)
+│   ├── Authentication (Passlib + Bcrypt)
 │   └── API Endpoints (REST)
 │
 └── Frontend (CustomTkinter)
+    ├── Login System (LoginWindow class)
     ├── API Client (HTTP communication)
+    ├── QR Code Generator (qrcode library)
+    ├── QR Code Scanner (OpenCV + pyzbar)
     ├── GUI Components (Custom widgets)
     └── Application Logic (Event handlers)
 ```
@@ -198,14 +219,55 @@ EduCore System
 
 ## Technologies Used
 
-- **Python 3.x**: Main programming language
+### Core Technologies
+- **Python 3.13**: Main programming language
 - **FastAPI**: Modern web framework for building APIs
 - **SQLAlchemy**: SQL toolkit and ORM
 - **Pydantic**: Data validation using Python type annotations
 - **CustomTkinter**: Modern GUI framework
 - **Requests**: HTTP library for API calls
 - **Uvicorn**: ASGI server for FastAPI
-- **SQLite**: Database (via SQLAlchemy)
+- **MySQL**: Relational database (via SQLAlchemy)
+
+### Authentication & Security 🔐
+- **Passlib**: Password hashing library
+- **Bcrypt**: Secure password encryption algorithm
+
+### QR Code Features 📱
+- **qrcode**: QR code generation
+- **OpenCV (cv2)**: Camera access and image processing
+- **pyzbar**: QR code scanning and decoding
+- **Pillow (PIL)**: Image manipulation
+- **NumPy**: Array operations for image processing
+
+---
+
+---
+
+## New Features in v2.0
+
+### 🔐 Authentication System
+- **Password Hashing**: Uses bcrypt for secure password storage
+- **Login Validation**: Server-side credential verification
+- **Session Management**: User data passed to main application
+- **Role-Based Access**: Admin/user roles (extensible)
+
+**Key Concepts:**
+- **Cryptography**: Password hashing with bcrypt
+- **Security**: Never store plain text passwords
+- **Context Manager**: Password context for hash verification
+
+### 📱 QR Code System
+- **QR Generation**: Automatic creation on student registration
+- **QR Scanning**: Real-time camera-based scanning
+- **Image Processing**: OpenCV for video capture and processing
+- **Data Encoding**: Student codes embedded in QR codes
+
+**Key Concepts:**
+- **Computer Vision**: OpenCV for camera handling
+- **Image Processing**: Frame manipulation and QR detection
+- **File I/O**: Saving/loading QR code images
+- **Threading**: Background processing for camera operations
 
 ---
 
@@ -213,8 +275,11 @@ EduCore System
 
 This project demonstrates comprehensive use of:
 - **Core OOP principles** (inheritance, encapsulation, polymorphism)
-- **Advanced Python features** (decorators, type hints, async/await)
+- **Advanced Python features** (decorators, type hints, async/await, threading)
 - **Database patterns** (ORM, relationships, constraints)
+- **Security practices** (password hashing, authentication)
+- **Computer vision** (QR code generation and scanning)
+- **Modern GUI design** (custom widgets, dark theme, responsive layouts)
 - **API design** (RESTful endpoints, validation, error handling)
 - **GUI development** (custom widgets, event handling, layout)
 

@@ -1,7 +1,7 @@
 """
 SQLAlchemy ORM Models for EduCore System
 """
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, UniqueConstraint, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
@@ -88,3 +88,20 @@ class Grade(Base):
     
     def __repr__(self):
         return f"<Grade(student='{self.student_code}', subject='{self.subject_code}', grade={self.grade})>"
+
+
+class User(Base):
+    """User model for authentication"""
+    __tablename__ = "users"
+    
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    username = Column(String(50), unique=True, nullable=False, index=True)
+    password_hash = Column(String(255), nullable=False)
+    full_name = Column(String(100), nullable=False)
+    role = Column(String(20), default="user")  # admin, user
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    last_login = Column(DateTime(timezone=True))
+    
+    def __repr__(self):
+        return f"<User(username='{self.username}', role='{self.role}')>"

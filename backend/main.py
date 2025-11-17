@@ -9,15 +9,21 @@ from typing import List
 import uvicorn
 
 from database import engine, get_db
-from models import Base, Student, Course, Grade, CourseSubject
+from models import Base, Student, Course, Grade, CourseSubject, User
 from schemas import (
     StudentCreate, StudentUpdate, StudentResponse,
     GradeCreate, GradeResponse,
-    CourseResponse, GWAReportResponse
+    CourseResponse, GWAReportResponse,
+    LoginRequest, LoginResponse, UserResponse
 )
+from passlib.context import CryptContext
+from datetime import datetime
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
+
+# Password hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 app = FastAPI(
     title="EduCore API",
@@ -33,6 +39,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ==================== Authentication Helper Functions ====================
+
+def hash_password(password: str) -> str:
+    """Hash a password"""
+    return pwd_context.hash(password)
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a password against its hash"""
+    return pwd_context.verify(plain_password, hashed_password)
 
 
 @app.on_event("startup")
@@ -89,7 +107,77 @@ async def startup_event():
         db.add_all(bsit_subjects + bscs_subjects + bsba_subjects)
         db.commit()
     
+    # Create default admin user if no users exist
+    existing_users = db.query(User).count()
+    if existing_users == 0:
+        default_admin = User(
+            username="admin",
+            password_hash=hash_password("admin123"),
+            full_name="System Administrator",
+            role="admin",
+            is_active=True
+        )
+        db.add(default_admin)
+        db.commit()
+        print("=" * 60)
+        print("DEFAULT ADMIN USER CREATED")
+        print("Username: admin")
+        print("Password: admin123")
+        print("PLEASE CHANGE THE PASSWORD AFTER FIRST LOGIN!")
+        print("=" * 60)
+    
     db.close()
+
+
+# ==================== Authentication Endpoints ====================
+
+@app.post("/api/auth/login", response_model=LoginResponse)
+def login(credentials: LoginRequest, db: Session = Depends(get_db)):
+    """User login endpoint"""
+    # Find user by username
+    user = db.query(User).filter(User.username == credentials.username).first()
+    
+    if not user:
+        return LoginResponse(
+            success=False,
+            message="Invalid username or password"
+        )
+    
+    # Check if user is active
+    if not user.is_active:
+        return LoginResponse(
+            success=False,
+            message="Account is deactivated"
+        )
+    
+    # Verify password
+    if not verify_password(credentials.password, user.password_hash):
+        return LoginResponse(
+            success=False,
+            message="Invalid username or password"
+        )
+    
+    # Update last login
+    user.last_login = datetime.now()
+    db.commit()
+    
+    return LoginResponse(
+        success=True,
+        message="Login successful",
+        user={
+            "id": user.id,
+            "username": user.username,
+            "full_name": user.full_name,
+            "role": user.role
+        }
+    )
+
+
+@app.get("/api/auth/users", response_model=List[UserResponse])
+def get_all_users(db: Session = Depends(get_db)):
+    """Get all users (admin only in production)"""
+    users = db.query(User).order_by(User.username).all()
+    return users
 
 
 # ==================== Student Endpoints ====================

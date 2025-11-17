@@ -15,6 +15,11 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from PIL import Image, ImageTk
 import io
+import qrcode
+import cv2
+from pyzbar.pyzbar import decode
+import os
+import numpy as np
 
 # Configure CustomTkinter appearance
 ctk.set_appearance_mode("dark")
@@ -89,15 +94,233 @@ class ModernEntry(ctk.CTkEntry):
         )
 
 
+class LoginWindow:
+    """Login window for authentication"""
+    
+    def __init__(self, api_client):
+        self.api = api_client
+        self.login_successful = False
+        self.user_data = None
+        
+        # Create login window
+        self.window = ctk.CTk()
+        self.window.geometry("550x700")
+        self.window.title("EduCore - Login")
+        self.window.resizable(False, False)
+        
+        # Center the window
+        self.center_window()
+        
+        # Create UI
+        self.create_login_ui()
+        
+    def center_window(self):
+        """Center the window on screen"""
+        self.window.update_idletasks()
+        width = self.window.winfo_width()
+        height = self.window.winfo_height()
+        x = (self.window.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.window.winfo_screenheight() // 2) - (height // 2)
+        self.window.geometry(f'{width}x{height}+{x}+{y}')
+        
+    def create_login_ui(self):
+        """Create the login interface"""
+        # Main container
+        main_frame = ctk.CTkFrame(self.window, fg_color="transparent")
+        main_frame.pack(fill="both", expand=True, padx=40, pady=40)
+        
+        # Logo/Title section
+        title_frame = ctk.CTkFrame(main_frame, fg_color="#1f538d", corner_radius=15)
+        title_frame.pack(fill="x", pady=(0, 30))
+        
+        ctk.CTkLabel(
+            title_frame,
+            text="🎓",
+            font=ctk.CTkFont(size=60)
+        ).pack(pady=(20, 10))
+        
+        ctk.CTkLabel(
+            title_frame,
+            text="EduCore System",
+            font=ctk.CTkFont(size=28, weight="bold"),
+            text_color="white"
+        ).pack()
+        
+        ctk.CTkLabel(
+            title_frame,
+            text="Academic Management System",
+            font=ctk.CTkFont(size=14),
+            text_color="lightblue"
+        ).pack(pady=(0, 20))
+        
+        # Login form
+        form_frame = ctk.CTkFrame(main_frame)
+        form_frame.pack(fill="both", expand=True, pady=10)
+        
+        ctk.CTkLabel(
+            form_frame,
+            text="Sign In",
+            font=ctk.CTkFont(size=24, weight="bold")
+        ).pack(pady=(20, 30))
+        
+        # Username
+        ctk.CTkLabel(
+            form_frame,
+            text="Username",
+            font=ctk.CTkFont(size=13)
+        ).pack(anchor="w", padx=40)
+        
+        self.username_entry = ModernEntry(
+            form_frame,
+            placeholder_text="Enter your username",
+            height=40
+        )
+        self.username_entry.pack(fill="x", padx=40, pady=(5, 20))
+        self.username_entry.bind("<Return>", lambda e: self.password_entry.focus())
+        
+        # Password
+        ctk.CTkLabel(
+            form_frame,
+            text="Password",
+            font=ctk.CTkFont(size=13)
+        ).pack(anchor="w", padx=40)
+        
+        self.password_entry = ModernEntry(
+            form_frame,
+            placeholder_text="Enter your password",
+            show="•",
+            height=40
+        )
+        self.password_entry.pack(fill="x", padx=40, pady=(5, 10))
+        self.password_entry.bind("<Return>", lambda e: self.login())
+        
+        # Show password checkbox
+        self.show_password_var = tk.BooleanVar(value=False)
+        show_password_checkbox = ctk.CTkCheckBox(
+            form_frame,
+            text="Show password",
+            variable=self.show_password_var,
+            command=self.toggle_password_visibility,
+            font=ctk.CTkFont(size=11)
+        )
+        show_password_checkbox.pack(anchor="w", padx=40, pady=(0, 20))
+        
+        # Error message label
+        self.error_label = ctk.CTkLabel(
+            form_frame,
+            text="",
+            font=ctk.CTkFont(size=12),
+            text_color="red"
+        )
+        self.error_label.pack(pady=(0, 10))
+        
+        # Login button
+        self.login_button = ctk.CTkButton(
+            form_frame,
+            text="Login",
+            command=self.login,
+            height=45,
+            corner_radius=8,
+            font=ctk.CTkFont(size=15, weight="bold"),
+            fg_color="#1f538d",
+            hover_color="#14375e"
+        )
+        self.login_button.pack(fill="x", padx=40, pady=(10, 20))
+        
+        # Info section
+        info_frame = ctk.CTkFrame(form_frame, fg_color="#2b2b2b", corner_radius=10)
+        info_frame.pack(fill="x", padx=40, pady=(0, 20))
+        
+        ctk.CTkLabel(
+            info_frame,
+            text="ℹ️ Default Credentials",
+            font=ctk.CTkFont(size=12, weight="bold")
+        ).pack(pady=(10, 5))
+        
+        ctk.CTkLabel(
+            info_frame,
+            text="Username: admin",
+            font=ctk.CTkFont(size=11),
+            text_color="gray70"
+        ).pack()
+        
+        ctk.CTkLabel(
+            info_frame,
+            text="Password: admin123",
+            font=ctk.CTkFont(size=11),
+            text_color="gray70"
+        ).pack(pady=(0, 10))
+        
+        # Focus on username
+        self.username_entry.focus()
+        
+    def toggle_password_visibility(self):
+        """Toggle password visibility"""
+        if self.show_password_var.get():
+            self.password_entry.configure(show="")
+        else:
+            self.password_entry.configure(show="•")
+            
+    def login(self):
+        """Handle login"""
+        username = self.username_entry.get().strip()
+        password = self.password_entry.get().strip()
+        
+        if not username or not password:
+            self.show_error("Please enter both username and password")
+            return
+        
+        # Disable login button
+        self.login_button.configure(state="disabled", text="Logging in...")
+        self.error_label.configure(text="")
+        
+        def do_login():
+            data = {
+                "username": username,
+                "password": password
+            }
+            result = self.api.post("/auth/login", data)
+            
+            if 'error' in result:
+                self.window.after(0, lambda: self.show_error(f"Connection error: {result['error']}"))
+                self.window.after(0, lambda: self.login_button.configure(state="normal", text="Login"))
+            elif result.get('success'):
+                self.user_data = result.get('user')
+                self.login_successful = True
+                self.window.after(0, self.window.destroy)
+            else:
+                self.window.after(0, lambda: self.show_error(result.get('message', 'Login failed')))
+                self.window.after(0, lambda: self.login_button.configure(state="normal", text="Login"))
+        
+        threading.Thread(target=do_login, daemon=True).start()
+        
+    def show_error(self, message):
+        """Show error message"""
+        self.error_label.configure(text=message)
+        
+    def run(self):
+        """Run the login window"""
+        self.window.mainloop()
+        return self.login_successful, self.user_data
+
+
 class EduCoreApp:
     """Main application class"""
     
-    def __init__(self):
+    def __init__(self, user_data=None):
         self.api = APIClient()
+        self.user_data = user_data or {}
         self.root = ctk.CTk()
         self.root.geometry("1400x850")
-        self.root.title("EduCore - Academic Management System v2.0")
+        
+        # Update title with user info
+        user_name = self.user_data.get('full_name', 'User')
+        self.root.title(f"EduCore - Academic Management System v2.0 - Welcome, {user_name}")
         self.root.minsize(1200, 700)
+        
+        # QR Code directory
+        self.qr_code_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "qr_codes")
+        os.makedirs(self.qr_code_dir, exist_ok=True)
         
         # Initialize data storage
         self.students = []
@@ -168,6 +391,25 @@ class EduCoreApp:
         """Create main tabview"""
         self.tabview = ctk.CTkTabview(self.main_container, corner_radius=10)
         self.tabview.pack(fill="both", expand=True)
+        
+        # Configure global treeview style for dark theme
+        self.style = ttk.Style()
+        self.style.theme_use("clam")
+        self.style.configure("Treeview",
+                            background="#2b2b2b",
+                            foreground="white",
+                            fieldbackground="#2b2b2b",
+                            borderwidth=0,
+                            rowheight=25,
+                            font=('Segoe UI', 10))
+        self.style.configure("Treeview.Heading",
+                            background="#1f538d",
+                            foreground="white",
+                            borderwidth=0,
+                            font=('Segoe UI', 11, 'bold'))
+        self.style.map('Treeview', 
+                      background=[('selected', '#144870')],
+                      foreground=[('selected', 'white')])
         
         # Add tabs
         self.tabview.add("Students")
@@ -301,6 +543,16 @@ class EduCoreApp:
         
         ModernButton(
             header_frame,
+            text="📱 View QR",
+            command=self.show_student_qr_code,
+            fg_color=self.colors['warning'],
+            hover_color="#e67e22",
+            width=120,
+            height=35
+        ).pack(side="right", padx=5)
+        
+        ModernButton(
+            header_frame,
             text="🗑️ Delete",
             command=self.delete_student,
             fg_color=self.colors['danger'],
@@ -312,22 +564,6 @@ class EduCoreApp:
         # Treeview frame
         tree_frame = ctk.CTkFrame(right_panel)
         tree_frame.pack(fill="both", expand=True, padx=15, pady=(0, 15))
-        
-        # Create Treeview
-        style = ttk.Style()
-        style.theme_use("clam")
-        style.configure("Treeview",
-                       background="#2b2b2b",
-                       foreground="white",
-                       fieldbackground="#2b2b2b",
-                       borderwidth=0,
-                       font=('Segoe UI', 10))
-        style.configure("Treeview.Heading",
-                       background="#1f538d",
-                       foreground="white",
-                       borderwidth=0,
-                       font=('Segoe UI', 11, 'bold'))
-        style.map('Treeview', background=[('selected', '#144870')])
         
         self.students_tree = ttk.Treeview(
             tree_frame,
@@ -497,6 +733,16 @@ Grade Scale:
             width=200
         )
         self.view_student_code_entry.pack(side="left", padx=(0, 10))
+        
+        ModernButton(
+            search_frame,
+            text="📷 Scan QR",
+            command=lambda: self.scan_qr_code(self.view_student_code_entry),
+            width=120,
+            height=35,
+            fg_color=self.colors['warning'],
+            hover_color="#e67e22"
+        ).pack(side="left", padx=(0, 10))
         
         ModernButton(
             search_frame,
@@ -993,7 +1239,9 @@ Grade Scale:
             result = self.api.post("/students", data)
             
             if 'error' not in result:
-                self.root.after(0, lambda: self.show_success("Student added successfully"))
+                # Generate QR code for the student
+                self.generate_qr_code(student_code, name)
+                self.root.after(0, lambda: self.show_success(f"Student added successfully!\nQR code generated for {student_code}"))
                 self.root.after(0, self.clear_student_form)
                 self.root.after(0, self.refresh_students)
             else:
@@ -1438,6 +1686,172 @@ Grade Scale:
         self.grade_entry.delete(0, 'end')
         self.subjects_data = {}
     
+    # ==================== QR Code Methods ====================
+    
+    def generate_qr_code(self, student_code, student_name):
+        """Generate QR code for a student"""
+        try:
+            # Create QR code
+            qr = qrcode.QRCode(
+                version=1,
+                error_correction=qrcode.constants.ERROR_CORRECT_L,
+                box_size=10,
+                border=4,
+            )
+            qr.add_data(student_code)
+            qr.make(fit=True)
+            
+            # Create image
+            img = qr.make_image(fill_color="black", back_color="white")
+            
+            # Save QR code
+            filename = f"{student_code.replace('-', '_')}.png"
+            filepath = os.path.join(self.qr_code_dir, filename)
+            img.save(filepath)
+            
+            print(f"QR code generated: {filepath}")
+            return filepath
+        except Exception as e:
+            print(f"Error generating QR code: {e}")
+            return None
+    
+    def scan_qr_code(self, entry_widget):
+        """Scan QR code using camera and fill the entry widget"""
+        def scan():
+            try:
+                cap = cv2.VideoCapture(0)
+                if not cap.isOpened():
+                    self.root.after(0, lambda: self.show_error("Camera Error", "Could not access camera"))
+                    return
+                
+                # Create a small window for camera feed
+                cv2.namedWindow("QR Code Scanner - Press ESC to cancel", cv2.WINDOW_NORMAL)
+                cv2.resizeWindow("QR Code Scanner - Press ESC to cancel", 640, 480)
+                
+                scanned = False
+                while not scanned:
+                    ret, frame = cap.read()
+                    if not ret:
+                        break
+                    
+                    # Decode QR codes in frame
+                    decoded_objects = decode(frame)
+                    
+                    for obj in decoded_objects:
+                        # Draw rectangle around QR code
+                        points = obj.polygon
+                        if len(points) == 4:
+                            pts = [(point.x, point.y) for point in points]
+                            cv2.polylines(frame, [np.array(pts, dtype=np.int32)], True, (0, 255, 0), 3)
+                        
+                        # Get the data
+                        qr_data = obj.data.decode('utf-8')
+                        
+                        # Display success message on frame
+                        cv2.putText(frame, f"Scanned: {qr_data}", (10, 30), 
+                                  cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                        cv2.putText(frame, "Press any key to confirm", (10, 60), 
+                                  cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+                        
+                        cv2.imshow("QR Code Scanner - Press ESC to cancel", frame)
+                        cv2.waitKey(1000)  # Show for 1 second
+                        
+                        # Fill the entry widget
+                        self.root.after(0, lambda: entry_widget.delete(0, 'end'))
+                        self.root.after(0, lambda d=qr_data: entry_widget.insert(0, d))
+                        self.root.after(0, lambda d=qr_data: self.show_success(f"QR Code scanned: {d}"))
+                        
+                        scanned = True
+                        break
+                    
+                    # Display instructions
+                    cv2.putText(frame, "Align QR code in camera view", (10, 30), 
+                              cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+                    cv2.putText(frame, "Press ESC to cancel", (10, 60), 
+                              cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+                    
+                    cv2.imshow("QR Code Scanner - Press ESC to cancel", frame)
+                    
+                    # Check for ESC key
+                    if cv2.waitKey(1) & 0xFF == 27:  # ESC key
+                        break
+                
+                cap.release()
+                cv2.destroyAllWindows()
+                
+            except Exception as e:
+                self.root.after(0, lambda: self.show_error("Scan Error", f"Error scanning QR code: {str(e)}"))
+        
+        threading.Thread(target=scan, daemon=True).start()
+    
+    def show_student_qr_code(self):
+        """Show QR code for selected student"""
+        selection = self.students_tree.selection()
+        if not selection:
+            self.show_error("Selection Error", "Please select a student to view QR code")
+            return
+        
+        item = self.students_tree.item(selection[0])
+        student_code = item['values'][0]
+        student_name = item['values'][1]
+        
+        # Check if QR code exists
+        filename = f"{student_code.replace('-', '_')}.png"
+        filepath = os.path.join(self.qr_code_dir, filename)
+        
+        if not os.path.exists(filepath):
+            # Generate if it doesn't exist
+            filepath = self.generate_qr_code(student_code, student_name)
+            if not filepath:
+                self.show_error("Error", "Failed to generate QR code")
+                return
+        
+        # Create a new window to display QR code
+        qr_window = ctk.CTkToplevel(self.root)
+        qr_window.title(f"QR Code - {student_name} ({student_code})")
+        qr_window.geometry("400x500")
+        qr_window.resizable(False, False)
+        
+        # Student info
+        info_frame = ctk.CTkFrame(qr_window)
+        info_frame.pack(fill="x", padx=20, pady=20)
+        
+        ctk.CTkLabel(
+            info_frame,
+            text=f"{student_name}",
+            font=ctk.CTkFont(size=18, weight="bold")
+        ).pack(pady=(10, 5))
+        
+        ctk.CTkLabel(
+            info_frame,
+            text=f"Student Code: {student_code}",
+            font=ctk.CTkFont(size=14)
+        ).pack(pady=(0, 10))
+        
+        # Display QR code
+        try:
+            img = Image.open(filepath)
+            img = img.resize((300, 300), Image.Resampling.LANCZOS)
+            photo = ImageTk.PhotoImage(img)
+            
+            qr_label = tk.Label(qr_window, image=photo, bg="#2b2b2b")
+            qr_label.image = photo  # Keep a reference
+            qr_label.pack(pady=10)
+        except Exception as e:
+            ctk.CTkLabel(
+                qr_window,
+                text=f"Error loading QR code:\n{str(e)}",
+                font=ctk.CTkFont(size=12)
+            ).pack(pady=20)
+        
+        # Instructions
+        ctk.CTkLabel(
+            qr_window,
+            text="Scan this QR code for quick student lookup",
+            font=ctk.CTkFont(size=11),
+            text_color="gray70"
+        ).pack(pady=(10, 20))
+    
     def show_success(self, message):
         """Show success message"""
         messagebox.showinfo("Success", message)
@@ -1460,8 +1874,27 @@ def main():
     print("Make sure the FastAPI backend is running on port 8000")
     print("=================================================\n")
     
-    app = EduCoreApp()
+    # Create API client
+    api_client = APIClient()
+    
+    # Show login window
+    print("Opening login window...")
+    login_window = LoginWindow(api_client)
+    success, user_data = login_window.run()
+    
+    if not success:
+        print("Login cancelled or failed. Exiting...")
+        return
+    
+    print(f"Login successful! Welcome, {user_data.get('full_name', 'User')}")
+    print(f"Role: {user_data.get('role', 'N/A')}")
+    print("Loading main application...\n")
+    
+    # Create and run main application
+    app = EduCoreApp(user_data)
     app.run()
+    
+    print("\nApplication closed. Goodbye!")
 
 
 if __name__ == "__main__":

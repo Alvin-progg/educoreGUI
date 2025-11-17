@@ -4,7 +4,15 @@ A modernized academic management system built with Python, FastAPI, MySQL, and C
 
 ## 🚀 Features
 
+- **🔐 Secure Login System**: User authentication with encrypted passwords
+  - Default admin account (username: admin, password: admin123)
+  - Bcrypt password hashing
+  - Role-based access (admin/user)
 - **Student Management**: Add, update, delete, and view student records
+- **QR Code Integration**: 📱 Automatic QR code generation for students
+  - Generate QR codes when adding students
+  - Scan QR codes for instant student lookup
+  - View and print student QR codes
 - **Course Management**: Predefined courses (BSIT, BSCS, BSBA) with their subjects
 - **Grade Management**: Record grades for subjects and automatically calculate GWA
 - **GWA Reports**: Generate comprehensive reports showing all students' academic performance
@@ -93,6 +101,12 @@ cd frontend
 python gui.py
 ```
 
+**🔐 Login Required:** A login window will appear. Use default credentials:
+- **Username:** `admin`
+- **Password:** `admin123`
+
+For detailed login instructions, see [LOGIN_GUIDE.md](LOGIN_GUIDE.md)
+
 ## 📁 Project Structure
 
 ```
@@ -100,21 +114,36 @@ educoreGUI/
 ├── backend/
 │   ├── main.py           # FastAPI application and endpoints
 │   ├── database.py       # Database configuration
-│   ├── models.py         # SQLAlchemy ORM models
+│   ├── models.py         # SQLAlchemy ORM models (includes User)
 │   └── schemas.py        # Pydantic schemas for validation
 ├── frontend/
-│   └── gui.py           # CustomTkinter GUI application
+│   ├── gui.py           # CustomTkinter GUI with login
+│   ├── generate_qr_for_existing.py  # QR code generator script
+│   └── test_qr.py       # QR code test script
+├── qr_codes/            # Generated QR codes
 ├── .env                 # Environment variables (create from .env.example)
 ├── .env.example         # Example environment configuration
 ├── requirements.txt     # Python dependencies
-└── README.md           # This file
+├── README.md           # This file
+├── LOGIN_GUIDE.md      # Login system documentation
+├── QR_QUICK_START.md   # QR code feature guide
+└── QR_CODE_FEATURE.md  # Detailed QR documentation
 ```
 
 ## 📚 Database Schema
 
 ### Tables
 
-1. **students**
+1. **users** 🔐 NEW!
+   - id (Primary Key)
+   - username (Unique)
+   - password_hash (Encrypted)
+   - full_name
+   - role (admin/user)
+   - is_active (Boolean)
+   - created_at, last_login
+
+2. **students**
    - id (Primary Key)
    - student_code (Unique)
    - name
@@ -243,8 +272,42 @@ The system uses the Philippine grading scale:
 - Activate virtual environment
 - Run `pip install -r requirements.txt`
 
+## 📱 QR Code Features (NEW!)
+
+EduCore now includes comprehensive QR code functionality:
+
+### Automatic QR Code Generation
+- QR codes are automatically generated when adding new students
+- QR codes stored in `qr_codes/` directory
+- Each QR code contains the student's unique code
+
+### QR Code Scanner
+- **Location**: Grades tab → "📷 Scan QR" button
+- Scan student QR codes with your camera
+- Auto-fills student code for instant lookup
+- Press ESC to cancel scanning
+
+### View QR Codes
+- **Location**: Students tab → "📱 View QR" button
+- View any student's QR code
+- Print QR codes for student ID cards
+- Auto-generates missing QR codes
+
+### Generate QR Codes for Existing Students
+```powershell
+cd frontend
+python generate_qr_for_existing.py
+```
+
+**For detailed QR code documentation, see:**
+- `QR_QUICK_START.md` - Quick start guide
+- `QR_CODE_FEATURE.md` - Detailed feature documentation
+- `IMPLEMENTATION_SUMMARY.md` - Technical implementation details
+
 ## 🆕 What's New in v2.0
 
+- **🔐 Secure Login System**: User authentication with bcrypt password hashing
+- **QR Code Integration**: Automatic generation and scanning of student QR codes 📱
 - **FastAPI Backend**: Upgraded from Flask to FastAPI
 - **SQLAlchemy ORM**: Proper database models and relationships
 - **Modern GUI**: Enhanced CustomTkinter interface with better UX

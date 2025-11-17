@@ -49,7 +49,7 @@ class CourseResponse(BaseModel):
     subjects: List[SubjectInfo] = []
     
     class Config:
-        orm_mode = True  # Pydantic v1
+        from_attributes = True  # Pydantic v2
 
 
 # ==================== Grade Schemas ====================
@@ -89,3 +89,29 @@ class GWAReportResponse(BaseModel):
     gwa: float
     description: str
     formatted_gwa: str
+
+
+# ==================== Auth Schemas ====================
+
+class LoginRequest(BaseModel):
+    username: str = Field(..., min_length=3, max_length=50, description="Username")
+    password: str = Field(..., min_length=4, description="Password")
+
+
+class LoginResponse(BaseModel):
+    success: bool
+    message: str
+    user: Optional[dict] = None
+
+
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    full_name: str
+    role: str
+    is_active: bool
+    created_at: Optional[datetime]
+    last_login: Optional[datetime]
+    
+    class Config:
+        from_attributes = True
