@@ -22,7 +22,7 @@ import os
 import numpy as np
 
 # Configure CustomTkinter appearance
-ctk.set_appearance_mode("dark")
+ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
 
@@ -71,27 +71,148 @@ class APIClient:
 
 
 class ModernButton(ctk.CTkButton):
-    """Custom styled button"""
+    """Custom styled button with modern design"""
     
     def __init__(self, master, **kwargs):
         super().__init__(
             master,
-            corner_radius=8,
+            corner_radius=10,
             font=ctk.CTkFont(size=13, weight="bold"),
+            border_width=0,
             **kwargs
         )
 
 
 class ModernEntry(ctk.CTkEntry):
-    """Custom styled entry"""
+    """Custom styled entry with modern design"""
     
     def __init__(self, master, **kwargs):
         super().__init__(
             master,
-            corner_radius=8,
+            corner_radius=10,
             font=ctk.CTkFont(size=12),
+            border_width=2,
+            border_color="#e5e7eb",
             **kwargs
         )
+
+
+class RoleSelectionWindow:
+    """Role selection window - Teacher or Student"""
+    
+    def __init__(self):
+        self.selected_role = None
+        
+        # Create role selection window
+        self.window = ctk.CTk()
+        self.window.geometry("600x650")
+        self.window.title("EduCore - Welcome")
+        self.window.resizable(False, False)
+        
+        # Center the window
+        self.center_window()
+        
+        # Create UI
+        self.create_role_selection_ui()
+        
+    def center_window(self):
+        """Center the window on screen"""
+        self.window.update_idletasks()
+        width = self.window.winfo_width()
+        height = self.window.winfo_height()
+        x = (self.window.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.window.winfo_screenheight() // 2) - (height // 2)
+        self.window.geometry(f'{width}x{height}+{x}+{y}')
+        
+    def create_role_selection_ui(self):
+        """Create role selection interface"""
+        # Main container
+        main_frame = ctk.CTkFrame(self.window, fg_color="transparent")
+        main_frame.pack(fill="both", expand=True, padx=40, pady=40)
+        
+        # Header
+        header_frame = ctk.CTkFrame(main_frame, fg_color=("#6366f1", "#6366f1"), corner_radius=20)
+        header_frame.pack(fill="x", pady=(0, 40))
+        
+        ctk.CTkLabel(
+            header_frame,
+            text="🎓",
+            font=ctk.CTkFont(size=60)
+        ).pack(pady=(20, 10))
+        
+        ctk.CTkLabel(
+            header_frame,
+            text="EduCore System",
+            font=ctk.CTkFont(size=28, weight="bold"),
+            text_color="white"
+        ).pack()
+        
+        ctk.CTkLabel(
+            header_frame,
+            text="Academic Management System",
+            font=ctk.CTkFont(size=14),
+            text_color="#e0e7ff"
+        ).pack(pady=(5, 20))
+        
+        # Selection frame
+        selection_frame = ctk.CTkFrame(main_frame)
+        selection_frame.pack(fill="both", expand=True)
+        
+        ctk.CTkLabel(
+            selection_frame,
+            text="Who are you?",
+            font=ctk.CTkFont(size=22, weight="bold")
+        ).pack(pady=(30, 40))
+        
+        # Teacher button
+        teacher_btn = ctk.CTkButton(
+            selection_frame,
+            text="👨‍🏫 Teacher / Admin",
+            command=lambda: self.select_role("teacher"),
+            height=80,
+            corner_radius=15,
+            font=ctk.CTkFont(size=18, weight="bold"),
+            fg_color="#6366f1",
+            hover_color="#4f46e5"
+        )
+        teacher_btn.pack(fill="x", padx=40, pady=10)
+        
+        ctk.CTkLabel(
+            selection_frame,
+            text="Access management features and administrative tools",
+            font=ctk.CTkFont(size=11),
+            text_color="#6b7280"
+        ).pack(pady=(0, 20))
+        
+        # Student button
+        student_btn = ctk.CTkButton(
+            selection_frame,
+            text="👨‍🎓 Student",
+            command=lambda: self.select_role("student"),
+            height=80,
+            corner_radius=15,
+            font=ctk.CTkFont(size=18, weight="bold"),
+            fg_color="#10b981",
+            hover_color="#059669"
+        )
+        student_btn.pack(fill="x", padx=40, pady=10)
+        
+        ctk.CTkLabel(
+            selection_frame,
+            text="View your grades, reports, and academic performance",
+            font=ctk.CTkFont(size=11),
+            text_color="#6b7280"
+        ).pack(pady=(0, 30))
+        
+    def select_role(self, role):
+        """Handle role selection"""
+        self.selected_role = role
+        self.window.destroy()
+        
+    def run(self):
+        """Run the role selection window"""
+        self.window.mainloop()
+        return self.selected_role
 
 
 class LoginWindow:
@@ -104,8 +225,8 @@ class LoginWindow:
         
         # Create login window
         self.window = ctk.CTk()
-        self.window.geometry("550x700")
-        self.window.title("EduCore - Login")
+        self.window.geometry("550x800")
+        self.window.title("EduCore - Teacher Login")
         self.window.resizable(False, False)
         
         # Center the window
@@ -130,7 +251,7 @@ class LoginWindow:
         main_frame.pack(fill="both", expand=True, padx=40, pady=40)
         
         # Logo/Title section
-        title_frame = ctk.CTkFrame(main_frame, fg_color="#1f538d", corner_radius=15)
+        title_frame = ctk.CTkFrame(main_frame, fg_color=("#6366f1", "#6366f1"), corner_radius=20)
         title_frame.pack(fill="x", pady=(0, 30))
         
         ctk.CTkLabel(
@@ -150,7 +271,7 @@ class LoginWindow:
             title_frame,
             text="Academic Management System",
             font=ctk.CTkFont(size=14),
-            text_color="lightblue"
+            text_color="#e0e7ff"
         ).pack(pady=(0, 20))
         
         # Login form
@@ -220,36 +341,12 @@ class LoginWindow:
             text="Login",
             command=self.login,
             height=45,
-            corner_radius=8,
+            corner_radius=10,
             font=ctk.CTkFont(size=15, weight="bold"),
-            fg_color="#1f538d",
-            hover_color="#14375e"
+            fg_color="#6366f1",
+            hover_color="#4f46e5"
         )
         self.login_button.pack(fill="x", padx=40, pady=(10, 20))
-        
-        # Info section
-        info_frame = ctk.CTkFrame(form_frame, fg_color="#2b2b2b", corner_radius=10)
-        info_frame.pack(fill="x", padx=40, pady=(0, 20))
-        
-        ctk.CTkLabel(
-            info_frame,
-            text="ℹ️ Default Credentials",
-            font=ctk.CTkFont(size=12, weight="bold")
-        ).pack(pady=(10, 5))
-        
-        ctk.CTkLabel(
-            info_frame,
-            text="Username: admin",
-            font=ctk.CTkFont(size=11),
-            text_color="gray70"
-        ).pack()
-        
-        ctk.CTkLabel(
-            info_frame,
-            text="Password: admin123",
-            font=ctk.CTkFont(size=11),
-            text_color="gray70"
-        ).pack(pady=(0, 10))
         
         # Focus on username
         self.username_entry.focus()
@@ -304,10 +401,148 @@ class LoginWindow:
         return self.login_successful, self.user_data
 
 
+class MenuWindow:
+    """Navigation menu window shown after login"""
+    
+    def __init__(self, user_data, api_client):
+        self.user_data = user_data
+        self.api = api_client
+        self.selected_feature = None
+        
+        # Create menu window
+        self.window = ctk.CTk()
+        self.window.geometry("700x650")
+        self.window.title("EduCore - Main Menu")
+        self.window.resizable(False, False)
+        
+        # Center the window
+        self.center_window()
+        
+        # Create UI
+        self.create_menu_ui()
+        
+    def center_window(self):
+        """Center the window on screen"""
+        self.window.update_idletasks()
+        width = self.window.winfo_width()
+        height = self.window.winfo_height()
+        x = (self.window.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.window.winfo_screenheight() // 2) - (height // 2)
+        self.window.geometry(f'{width}x{height}+{x}+{y}')
+        
+    def create_menu_ui(self):
+        """Create the menu interface"""
+        # Main container
+        main_frame = ctk.CTkFrame(self.window, fg_color="transparent")
+        main_frame.pack(fill="both", expand=True, padx=40, pady=40)
+        
+        # Header section
+        header_frame = ctk.CTkFrame(main_frame, fg_color=("#6366f1", "#6366f1"), corner_radius=20)
+        header_frame.pack(fill="x", pady=(0, 30))
+        
+        ctk.CTkLabel(
+            header_frame,
+            text="🎓",
+            font=ctk.CTkFont(size=50)
+        ).pack(pady=(20, 10))
+        
+        ctk.CTkLabel(
+            header_frame,
+            text="EduCore System",
+            font=ctk.CTkFont(size=26, weight="bold"),
+            text_color="white"
+        ).pack()
+        
+        user_name = self.user_data.get('full_name', 'User')
+        ctk.CTkLabel(
+            header_frame,
+            text=f"Welcome, {user_name}!",
+            font=ctk.CTkFont(size=14),
+            text_color="#e0e7ff"
+        ).pack(pady=(5, 20))
+        
+        # Menu options frame
+        menu_frame = ctk.CTkFrame(main_frame)
+        menu_frame.pack(fill="both", expand=True)
+        
+        ctk.CTkLabel(
+            menu_frame,
+            text="Select a Feature",
+            font=ctk.CTkFont(size=20, weight="bold")
+        ).pack(pady=(20, 25))
+        
+        # Menu buttons
+        buttons_info = [
+            ("👥 Students Management", "Manage student records, add new students, update information", "Students", "#10b981"),
+            ("📝 Grades Management", "Add and view student grades, track academic performance", "Grades", "#3b82f6"),
+            ("📊 Reports", "View GWA reports and academic standings", "Reports", "#f59e0b"),
+            ("📈 Analytics Dashboard", "View statistics, charts, and performance insights", "Analytics", "#8b5cf6"),
+            ("📚 Courses & Subjects", "Browse available courses and subjects", "Courses", "#6366f1"),
+        ]
+        
+        for icon_text, description, feature, color in buttons_info:
+            btn_frame = ctk.CTkFrame(menu_frame, fg_color="transparent")
+            btn_frame.pack(fill="x", padx=30, pady=8)
+            
+            btn = ctk.CTkButton(
+                btn_frame,
+                text=icon_text,
+                command=lambda f=feature: self.open_feature(f),
+                height=50,
+                corner_radius=10,
+                font=ctk.CTkFont(size=15, weight="bold"),
+                fg_color=color,
+                hover_color=self.adjust_color_brightness(color, 0.8),
+                anchor="w"
+            )
+            btn.pack(fill="x")
+            
+            ctk.CTkLabel(
+                btn_frame,
+                text=description,
+                font=ctk.CTkFont(size=10),
+                text_color="#6b7280"
+            ).pack(anchor="w", padx=10, pady=(2, 0))
+        
+        # Logout button
+        ctk.CTkButton(
+            menu_frame,
+            text="🚪 Logout",
+            command=self.logout,
+            height=40,
+            corner_radius=10,
+            font=ctk.CTkFont(size=13),
+            fg_color="#ef4444",
+            hover_color="#dc2626"
+        ).pack(fill="x", padx=30, pady=(20, 20))
+        
+    def adjust_color_brightness(self, hex_color, factor):
+        """Adjust color brightness for hover effect"""
+        hex_color = hex_color.lstrip('#')
+        rgb = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+        new_rgb = tuple(int(c * factor) for c in rgb)
+        return f"#{new_rgb[0]:02x}{new_rgb[1]:02x}{new_rgb[2]:02x}"
+        
+    def open_feature(self, feature):
+        """Open selected feature"""
+        self.selected_feature = feature
+        self.window.destroy()
+        
+    def logout(self):
+        """Logout and close window"""
+        self.selected_feature = None
+        self.window.destroy()
+        
+    def run(self):
+        """Run the menu window"""
+        self.window.mainloop()
+        return self.selected_feature
+
+
 class EduCoreApp:
     """Main application class"""
     
-    def __init__(self, user_data=None):
+    def __init__(self, user_data=None, initial_tab=None):
         self.api = APIClient()
         self.user_data = user_data or {}
         self.root = ctk.CTk()
@@ -326,17 +561,21 @@ class EduCoreApp:
         self.students = []
         self.courses = []
         self.current_student_grades = []
+        self.initial_tab = initial_tab
         
-        # Color scheme
+        # Color scheme - Modern palette
         self.colors = {
-            'primary': '#1f538d',
-            'primary_dark': '#14375e',
-            'secondary': '#14375e',
-            'success': '#2ecc71',
-            'danger': '#e74c3c',
-            'warning': '#f39c12',
-            'info': '#3498db',
-            'border': '#3a3a3a'
+            'primary': '#6366f1',
+            'primary_dark': '#4f46e5',
+            'secondary': '#8b5cf6',
+            'success': '#10b981',
+            'danger': '#ef4444',
+            'warning': '#f59e0b',
+            'info': '#3b82f6',
+            'border': '#e5e7eb',
+            'bg_light': '#f9fafb',
+            'text_primary': '#111827',
+            'text_secondary': '#6b7280'
         }
         
         self.setup_ui()
@@ -374,42 +613,61 @@ class EduCoreApp:
             title_frame,
             text="Academic Management System - Student, Course & Grade Management",
             font=ctk.CTkFont(size=13),
-            text_color="gray70"
+            text_color="#6b7280"
         )
         subtitle.pack(anchor="w")
         
+        # Right side buttons
+        right_frame = ctk.CTkFrame(header, fg_color="transparent")
+        right_frame.pack(side="right", padx=30)
+        
+        # Back to menu button
+        ctk.CTkButton(
+            right_frame,
+            text="🏠 Main Menu",
+            command=self.back_to_menu,
+            width=120,
+            height=35,
+            corner_radius=8,
+            font=ctk.CTkFont(size=12, weight="bold"),
+            fg_color=self.colors['primary'],
+            hover_color=self.colors['primary_dark']
+        ).pack(side="right", padx=(0, 10))
+        
         # Status indicator
         self.status_label = ctk.CTkLabel(
-            header,
+            right_frame,
             text="● Connected",
             font=ctk.CTkFont(size=12),
             text_color=self.colors['success']
         )
-        self.status_label.pack(side="right", padx=30)
+        self.status_label.pack(side="right", padx=(0, 10))
     
     def create_tabview(self):
         """Create main tabview"""
         self.tabview = ctk.CTkTabview(self.main_container, corner_radius=10)
         self.tabview.pack(fill="both", expand=True)
         
-        # Configure global treeview style for dark theme
+        # Configure global treeview style for light theme
         self.style = ttk.Style()
         self.style.theme_use("clam")
         self.style.configure("Treeview",
-                            background="#2b2b2b",
-                            foreground="white",
-                            fieldbackground="#2b2b2b",
-                            borderwidth=0,
-                            rowheight=25,
+                            background="#ffffff",
+                            foreground="#111827",
+                            fieldbackground="#ffffff",
+                            borderwidth=1,
+                            bordercolor="#e5e7eb",
+                            rowheight=28,
                             font=('Segoe UI', 10))
         self.style.configure("Treeview.Heading",
-                            background="#1f538d",
+                            background="#6366f1",
                             foreground="white",
                             borderwidth=0,
+                            relief="flat",
                             font=('Segoe UI', 11, 'bold'))
         self.style.map('Treeview', 
-                      background=[('selected', '#144870')],
-                      foreground=[('selected', 'white')])
+                      background=[('selected', '#e0e7ff')],
+                      foreground=[('selected', '#4f46e5')])
         
         # Add tabs
         self.tabview.add("Students")
@@ -424,6 +682,27 @@ class EduCoreApp:
         self.create_reports_tab()
         self.create_analytics_tab()
         self.create_courses_tab()
+        
+        # Set initial tab if specified
+        if self.initial_tab:
+            self.tabview.set(self.initial_tab)
+            # Auto-load analytics if that's the initial tab
+            if self.initial_tab == "Analytics":
+                self.root.after(100, self.refresh_analytics)
+        
+        # Store original command and wrap it to auto-load analytics
+        self._original_tab_command = self.tabview._segmented_button.cget("command")
+        self.tabview._segmented_button.configure(command=self._on_tab_change)
+    
+    def _on_tab_change(self, tab_name):
+        """Handle tab change events"""
+        # Call the original command to actually change the tab
+        if self._original_tab_command:
+            self._original_tab_command(tab_name)
+        
+        # Auto-refresh analytics when switching to it
+        if tab_name == "Analytics":
+            self.root.after(100, self.refresh_analytics)
     
     def create_students_tab(self):
         """Create students management tab"""
@@ -468,7 +747,11 @@ class EduCoreApp:
             variable=self.course_var,
             values=["BSIT", "BSCS", "BSBA"],
             font=ctk.CTkFont(size=12),
-            corner_radius=8
+            corner_radius=10,
+            border_width=2,
+            border_color="#e5e7eb",
+            button_color="#6366f1",
+            button_hover_color="#4f46e5"
         )
         self.course_dropdown.pack(fill="x", padx=10, pady=(5, 15))
         
@@ -478,7 +761,7 @@ class EduCoreApp:
             text="Add Student",
             command=self.add_student,
             fg_color=self.colors['success'],
-            hover_color="#27ae60",
+            hover_color="#059669",
             height=40
         ).pack(fill="x", padx=10, pady=(0, 15))
         
@@ -506,7 +789,11 @@ class EduCoreApp:
             variable=self.update_course_var,
             values=["BSIT", "BSCS", "BSBA"],
             font=ctk.CTkFont(size=12),
-            corner_radius=8
+            corner_radius=10,
+            border_width=2,
+            border_color="#e5e7eb",
+            button_color="#6366f1",
+            button_hover_color="#4f46e5"
         )
         self.update_course_dropdown.pack(fill="x", padx=10, pady=(5, 15))
         
@@ -515,7 +802,7 @@ class EduCoreApp:
             text="Update Course",
             command=self.update_student_course,
             fg_color=self.colors['info'],
-            hover_color="#2980b9",
+            hover_color="#2563eb",
             height=40
         ).pack(fill="x", padx=10, pady=(0, 15))
         
@@ -546,7 +833,7 @@ class EduCoreApp:
             text="📱 View QR",
             command=self.show_student_qr_code,
             fg_color=self.colors['warning'],
-            hover_color="#e67e22",
+            hover_color="#d97706",
             width=120,
             height=35
         ).pack(side="right", padx=5)
@@ -556,7 +843,7 @@ class EduCoreApp:
             text="🗑️ Delete",
             command=self.delete_student,
             fg_color=self.colors['danger'],
-            hover_color="#c0392b",
+            hover_color="#dc2626",
             width=120,
             height=35
         ).pack(side="right")
@@ -645,6 +932,8 @@ class EduCoreApp:
             font=ctk.CTkFont(size=12),
             dropdown_font=ctk.CTkFont(size=11),
             height=35,
+            corner_radius=10,
+            border_width=2,
             button_color=self.colors['primary'],
             button_hover_color=self.colors['primary_dark'],
             border_color=self.colors['border']
@@ -673,7 +962,7 @@ class EduCoreApp:
         self.grade_entry.pack(fill="x", padx=10, pady=(5, 15))
         
         # Grade Scale Info
-        info_frame = ctk.CTkFrame(add_section, fg_color="#2b2b2b")
+        info_frame = ctk.CTkFrame(add_section, fg_color=("#f3f4f6", "#f3f4f6"))
         info_frame.pack(fill="x", padx=10, pady=(0, 15))
         
         grade_info = """
@@ -690,7 +979,7 @@ Grade Scale:
             text=grade_info,
             font=ctk.CTkFont(size=10),
             justify="left",
-            text_color="gray70"
+            text_color="#4b5563"
         ).pack(padx=10, pady=10, anchor="w")
         
         # Add Button
@@ -699,7 +988,7 @@ Grade Scale:
             text="Submit Grade",
             command=self.add_grade,
             fg_color=self.colors['success'],
-            hover_color="#27ae60",
+            hover_color="#059669",
             height=40
         ).pack(fill="x", padx=10, pady=(0, 15))
         
@@ -741,7 +1030,7 @@ Grade Scale:
             width=120,
             height=35,
             fg_color=self.colors['warning'],
-            hover_color="#e67e22"
+            hover_color="#d97706"
         ).pack(side="left", padx=(0, 10))
         
         ModernButton(
@@ -760,7 +1049,7 @@ Grade Scale:
             self.grades_info_frame,
             text="Select a student to view grades",
             font=ctk.CTkFont(size=13),
-            text_color="gray70"
+            text_color="#6b7280"
         )
         self.student_info_label.pack(pady=10)
         
@@ -902,7 +1191,7 @@ Grade Scale:
         canvas_frame.pack(fill="both", expand=True, padx=15, pady=(0, 15))
         
         # Create canvas and scrollbar
-        self.analytics_canvas = tk.Canvas(canvas_frame, bg="#2b2b2b", highlightthickness=0)
+        self.analytics_canvas = tk.Canvas(canvas_frame, bg="#f9fafb", highlightthickness=0)
         analytics_scrollbar = ttk.Scrollbar(canvas_frame, orient="vertical", command=self.analytics_canvas.yview)
         
         # Create frame inside canvas
@@ -1113,6 +1402,9 @@ Grade Scale:
         self.load_courses()
         self.refresh_students()
         self.refresh_gwa_report()
+        # Load analytics if it's the initial tab
+        if self.initial_tab == "Analytics":
+            self.refresh_analytics()
     
     def load_courses(self):
         """Load courses from API"""
@@ -1146,7 +1438,7 @@ Grade Scale:
             course_frame.pack(fill="x", pady=10, padx=10)
             
             # Course header
-            header = ctk.CTkFrame(course_frame, fg_color=self.colors['primary'])
+            header = ctk.CTkFrame(course_frame, fg_color=(self.colors['primary'], self.colors['primary']))
             header.pack(fill="x", padx=0, pady=0)
             
             ctk.CTkLabel(
@@ -1168,7 +1460,7 @@ Grade Scale:
                 ).pack(anchor="w", pady=(0, 10))
                 
                 for subject in course['subjects']:
-                    subject_item = ctk.CTkFrame(subjects_frame, fg_color="#2b2b2b")
+                    subject_item = ctk.CTkFrame(subjects_frame, fg_color=("#f9fafb", "#f9fafb"))
                     subject_item.pack(fill="x", pady=2)
                     
                     ctk.CTkLabel(
@@ -1477,16 +1769,16 @@ Grade Scale:
         if not course_data:
             return
         
-        # Set dark theme for matplotlib
-        plt.style.use('dark_background')
+        # Set light theme for matplotlib
+        plt.style.use('default')
         
-        fig, ax = plt.subplots(figsize=(5, 3.5), facecolor='#2b2b2b', dpi=80)
-        ax.set_facecolor('#2b2b2b')
+        fig, ax = plt.subplots(figsize=(5, 3.5), facecolor='white', dpi=80)
+        ax.set_facecolor('white')
         
         courses = [item['course'] for item in course_data]
         counts = [item['count'] for item in course_data]
         
-        colors = ['#1f538d', '#2ecc71', '#f39c12', '#e74c3c', '#9b59b6']
+        colors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
         
         ax.pie(counts, labels=courses, autopct='%1.1f%%', startangle=90, colors=colors[:len(courses)])
         ax.axis('equal')
@@ -1499,15 +1791,15 @@ Grade Scale:
         if not grade_data:
             return
         
-        plt.style.use('dark_background')
+        plt.style.use('default')
         
-        fig, ax = plt.subplots(figsize=(5, 3.5), facecolor='#2b2b2b', dpi=80)
-        ax.set_facecolor('#2b2b2b')
+        fig, ax = plt.subplots(figsize=(5, 3.5), facecolor='white', dpi=80)
+        ax.set_facecolor('white')
         
         ranges = [item['range'] for item in grade_data]
         counts = [item['count'] for item in grade_data]
         
-        colors = ['#2ecc71', '#3498db', '#f39c12', '#e67e22', '#e74c3c']
+        colors = ['#10b981', '#3b82f6', '#f59e0b', '#fb923c', '#ef4444']
         
         bars = ax.bar(range(len(ranges)), counts, color=colors)
         ax.set_xticks(range(len(ranges)))
@@ -1531,15 +1823,15 @@ Grade Scale:
         if not performance_data:
             return
         
-        plt.style.use('dark_background')
+        plt.style.use('default')
         
-        fig, ax = plt.subplots(figsize=(7, 3.5), facecolor='#2b2b2b', dpi=80)
-        ax.set_facecolor('#2b2b2b')
+        fig, ax = plt.subplots(figsize=(7, 3.5), facecolor='white', dpi=80)
+        ax.set_facecolor('white')
         
         courses = [item['course'] for item in performance_data]
         avg_gwas = [item['avg_gwa'] for item in performance_data]
         
-        colors = ['#2ecc71' if gwa <= 1.75 else '#3498db' if gwa <= 2.5 else '#f39c12' 
+        colors = ['#10b981' if gwa <= 1.75 else '#3b82f6' if gwa <= 2.5 else '#f59e0b' 
                   for gwa in avg_gwas]
         
         bars = ax.bar(courses, avg_gwas, color=colors)
@@ -1555,9 +1847,9 @@ Grade Scale:
                    ha='center', va='bottom', fontsize=8)
         
         # Add reference lines
-        ax.axhline(y=1.75, color='#2ecc71', linestyle='--', alpha=0.5, label='Excellent')
-        ax.axhline(y=2.5, color='#3498db', linestyle='--', alpha=0.5, label='Good')
-        ax.axhline(y=3.0, color='#f39c12', linestyle='--', alpha=0.5, label='Satisfactory')
+        ax.axhline(y=1.75, color='#10b981', linestyle='--', alpha=0.6, label='Excellent')
+        ax.axhline(y=2.5, color='#3b82f6', linestyle='--', alpha=0.6, label='Good')
+        ax.axhline(y=3.0, color='#f59e0b', linestyle='--', alpha=0.6, label='Satisfactory')
         ax.legend(fontsize=8)
         
         plt.tight_layout()
@@ -1567,7 +1859,7 @@ Grade Scale:
         """Convert matplotlib figure to image and display in label"""
         # Save figure to bytes buffer with optimized DPI for performance
         buf = io.BytesIO()
-        fig.savefig(buf, format='png', dpi=80, facecolor='#2b2b2b', bbox_inches='tight')
+        fig.savefig(buf, format='png', dpi=80, facecolor='white', bbox_inches='tight')
         buf.seek(0)
         plt.close(fig)
         
@@ -1834,7 +2126,7 @@ Grade Scale:
             img = img.resize((300, 300), Image.Resampling.LANCZOS)
             photo = ImageTk.PhotoImage(img)
             
-            qr_label = tk.Label(qr_window, image=photo, bg="#2b2b2b")
+            qr_label = tk.Label(qr_window, image=photo, bg="white")
             qr_label.image = photo  # Keep a reference
             qr_label.pack(pady=10)
         except Exception as e:
@@ -1860,9 +2152,558 @@ Grade Scale:
         """Show error message"""
         messagebox.showerror(title, message)
     
+    def back_to_menu(self):
+        """Return to main menu"""
+        if messagebox.askyesno("Return to Menu", "Do you want to return to the main menu?"):
+            self.root.destroy()
+            # Relaunch menu
+            menu = MenuWindow(self.user_data, self.api)
+            selected = menu.run()
+            if selected:
+                app = EduCoreApp(self.user_data, initial_tab=selected)
+                app.run()
+    
     def run(self):
         """Start the application"""
         self.root.mainloop()
+
+
+class StudentPortalWindow:
+    """Student portal window with QR scanning and grade viewing"""
+    
+    def __init__(self, api_client):
+        self.api = api_client
+        self.student_data = None
+        self.current_student_code = None
+        
+        # Create window
+        self.window = ctk.CTk()
+        self.window.geometry("1200x800")
+        self.window.title("EduCore - Student Portal")
+        self.window.minsize(900, 600)
+        
+        # QR Code directory
+        self.qr_code_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "qr_codes")
+        
+        # Colors
+        self.colors = {
+            'primary': '#10b981',
+            'primary_dark': '#059669',
+            'success': '#10b981',
+            'danger': '#ef4444',
+            'warning': '#f59e0b',
+            'info': '#3b82f6',
+            'secondary': '#8b5cf6',
+            'bg_light': '#f9fafb'
+        }
+        
+        self.setup_ui()
+        
+    def setup_ui(self):
+        """Setup the student portal UI"""
+        # Header
+        header = ctk.CTkFrame(self.window, height=100, corner_radius=0, fg_color=("#10b981", "#10b981"))
+        header.pack(fill="x", padx=0, pady=0)
+        header.pack_propagate(False)
+        
+        # Title
+        title_frame = ctk.CTkFrame(header, fg_color="transparent")
+        title_frame.pack(side="left", padx=30, pady=20)
+        
+        ctk.CTkLabel(
+            title_frame,
+            text="👨‍🎓 Student Portal",
+            font=ctk.CTkFont(size=32, weight="bold"),
+            text_color="white"
+        ).pack(anchor="w")
+        
+        ctk.CTkLabel(
+            title_frame,
+            text="View your grades and academic performance",
+            font=ctk.CTkFont(size=13),
+            text_color="#d1fae5"
+        ).pack(anchor="w")
+        
+        # Back button
+        ctk.CTkButton(
+            header,
+            text="🏠 Back to Home",
+            command=self.go_back,
+            width=140,
+            height=40,
+            corner_radius=10,
+            font=ctk.CTkFont(size=13, weight="bold"),
+            fg_color="white",
+            text_color="#10b981",
+            hover_color="#f0fdf4"
+        ).pack(side="right", padx=30)
+        
+        # Main content
+        self.main_container = ctk.CTkFrame(self.window, fg_color="transparent")
+        self.main_container.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        # Show scan interface initially
+        self.show_scan_interface()
+        
+    def show_scan_interface(self):
+        """Show QR code scanning interface"""
+        # Clear main container
+        for widget in self.main_container.winfo_children():
+            widget.destroy()
+        
+        # Center frame
+        center_frame = ctk.CTkFrame(self.main_container, fg_color="transparent")
+        center_frame.pack(expand=True)
+        
+        # Scan card
+        scan_card = ctk.CTkFrame(center_frame, width=550, height=500, corner_radius=20)
+        scan_card.pack(padx=40, pady=40)
+        scan_card.pack_propagate(False)
+        
+        ctk.CTkLabel(
+            scan_card,
+            text="📱",
+            font=ctk.CTkFont(size=80)
+        ).pack(pady=(40, 20))
+        
+        ctk.CTkLabel(
+            scan_card,
+            text="Scan Your Student QR Code",
+            font=ctk.CTkFont(size=24, weight="bold")
+        ).pack(pady=(0, 10))
+        
+        ctk.CTkLabel(
+            scan_card,
+            text="Click the button below to scan your QR code\nor enter your student code manually",
+            font=ctk.CTkFont(size=13),
+            text_color="#6b7280"
+        ).pack(pady=(0, 30))
+        
+        # Manual entry
+        entry_frame = ctk.CTkFrame(scan_card, fg_color="transparent")
+        entry_frame.pack(pady=(0, 20), padx=40, fill="x")
+        
+        self.student_code_entry = ctk.CTkEntry(
+            entry_frame,
+            placeholder_text="Enter Student Code (e.g., 24-49051)",
+            height=45,
+            font=ctk.CTkFont(size=13),
+            corner_radius=10,
+            border_width=2,
+            border_color="#e5e7eb"
+        )
+        self.student_code_entry.pack(fill="x", pady=(0, 15))
+        self.student_code_entry.bind("<Return>", lambda e: self.load_student_data())
+        
+        # Buttons
+        ctk.CTkButton(
+            entry_frame,
+            text="📷 Scan QR Code",
+            command=self.scan_qr_and_load,
+            height=50,
+            corner_radius=10,
+            font=ctk.CTkFont(size=15, weight="bold"),
+            fg_color=self.colors['primary'],
+            hover_color=self.colors['primary_dark']
+        ).pack(fill="x", pady=(0, 10))
+        
+        ctk.CTkButton(
+            entry_frame,
+            text="🔍 View My Records",
+            command=self.load_student_data,
+            height=50,
+            corner_radius=10,
+            font=ctk.CTkFont(size=15, weight="bold"),
+            fg_color=self.colors['info'],
+            hover_color="#2563eb"
+        ).pack(fill="x")
+        
+    def scan_qr_and_load(self):
+        """Scan QR code and load student data"""
+        def scan():
+            try:
+                cap = cv2.VideoCapture(0)
+                if not cap.isOpened():
+                    self.window.after(0, lambda: messagebox.showerror("Camera Error", "Could not access camera"))
+                    return
+                
+                self.window.after(0, lambda: messagebox.showinfo("QR Scanner", "Position your QR code in front of the camera.\nPress 'Q' to cancel."))
+                
+                while True:
+                    ret, frame = cap.read()
+                    if not ret:
+                        break
+                    
+                    decoded_objects = decode(frame)
+                    
+                    for obj in decoded_objects:
+                        student_code = obj.data.decode('utf-8')
+                        cap.release()
+                        cv2.destroyAllWindows()
+                        
+                        self.window.after(0, lambda code=student_code: self.student_code_entry.delete(0, 'end'))
+                        self.window.after(0, lambda code=student_code: self.student_code_entry.insert(0, code))
+                        self.window.after(100, self.load_student_data)
+                        return
+                    
+                    cv2.imshow('QR Code Scanner - Press Q to quit', frame)
+                    
+                    if cv2.waitKey(1) & 0xFF == ord('q'):
+                        break
+                
+                cap.release()
+                cv2.destroyAllWindows()
+                
+            except Exception as e:
+                self.window.after(0, lambda: messagebox.showerror("Scan Error", f"Error scanning QR code:\n{str(e)}"))
+        
+        threading.Thread(target=scan, daemon=True).start()
+        
+    def load_student_data(self):
+        """Load student data from API"""
+        student_code = self.student_code_entry.get().strip()
+        
+        if not student_code:
+            messagebox.showerror("Validation Error", "Please enter a student code")
+            return
+        
+        def load():
+            # Get student info
+            student_result = self.api.get(f"/students/{student_code}")
+            
+            if 'error' in student_result:
+                self.window.after(0, lambda: messagebox.showerror("Error", f"Student not found: {student_result['error']}"))
+                return
+            
+            # Get grades
+            grades_result = self.api.get(f"/grades/{student_code}")
+            
+            if 'error' in grades_result:
+                self.window.after(0, lambda: messagebox.showerror("Error", f"Could not load grades: {grades_result['error']}"))
+                return
+            
+            self.student_data = student_result
+            self.current_student_code = student_code
+            self.window.after(0, lambda: self.show_student_dashboard(student_result, grades_result))
+        
+        threading.Thread(target=load, daemon=True).start()
+        
+    def show_student_dashboard(self, student_info, grades_data):
+        """Show student dashboard with grades and analytics"""
+        # Clear main container
+        for widget in self.main_container.winfo_children():
+            widget.destroy()
+        
+        # Create scrollable frame
+        scroll_frame = ctk.CTkScrollableFrame(self.main_container)
+        scroll_frame.pack(fill="both", expand=True)
+        
+        # Student Info Card
+        info_card = ctk.CTkFrame(scroll_frame, corner_radius=15)
+        info_card.pack(fill="x", pady=(0, 20), padx=10)
+        
+        info_header = ctk.CTkFrame(info_card, fg_color=("#10b981", "#10b981"), corner_radius=15)
+        info_header.pack(fill="x", padx=0, pady=0)
+        
+        info_content = ctk.CTkFrame(info_header, fg_color="transparent")
+        info_content.pack(fill="x", padx=30, pady=20)
+        
+        ctk.CTkLabel(
+            info_content,
+            text=student_info['name'],
+            font=ctk.CTkFont(size=26, weight="bold"),
+            text_color="white"
+        ).pack(anchor="w")
+        
+        details_frame = ctk.CTkFrame(info_content, fg_color="transparent")
+        details_frame.pack(anchor="w", pady=(10, 0))
+        
+        ctk.CTkLabel(
+            details_frame,
+            text=f"Student Code: {student_info['student_code']}  •  Course: {student_info['course_code']}",
+            font=ctk.CTkFont(size=14),
+            text_color="#d1fae5"
+        ).pack(side="left")
+        
+        # GWA Display
+        gwa = student_info.get('gwa', 0)
+        gwa_frame = ctk.CTkFrame(info_card, fg_color="transparent")
+        gwa_frame.pack(fill="x", padx=30, pady=20)
+        
+        gwa_value = f"{gwa:.2f}" if gwa > 0 else "N/A"
+        gwa_color = "#10b981" if gwa <= 1.75 else "#3b82f6" if gwa <= 2.5 else "#f59e0b" if gwa <= 3.0 else "#ef4444"
+        gwa_status = self.get_grade_description(gwa)
+        
+        ctk.CTkLabel(
+            gwa_frame,
+            text="General Weighted Average (GWA)",
+            font=ctk.CTkFont(size=14),
+            text_color="#6b7280"
+        ).pack(anchor="w")
+        
+        gwa_display_frame = ctk.CTkFrame(gwa_frame, fg_color="transparent")
+        gwa_display_frame.pack(anchor="w", pady=(5, 0))
+        
+        ctk.CTkLabel(
+            gwa_display_frame,
+            text=gwa_value,
+            font=ctk.CTkFont(size=48, weight="bold"),
+            text_color=gwa_color
+        ).pack(side="left", padx=(0, 15))
+        
+        ctk.CTkLabel(
+            gwa_display_frame,
+            text=f"• {gwa_status}",
+            font=ctk.CTkFont(size=18, weight="bold"),
+            text_color=gwa_color
+        ).pack(side="left")
+        
+        # Grades Section
+        grades_card = ctk.CTkFrame(scroll_frame, corner_radius=15)
+        grades_card.pack(fill="both", expand=True, pady=(0, 20), padx=10)
+        
+        ctk.CTkLabel(
+            grades_card,
+            text="📝 Your Grades",
+            font=ctk.CTkFont(size=20, weight="bold")
+        ).pack(anchor="w", padx=20, pady=(20, 15))
+        
+        if grades_data:
+            # Treeview for grades
+            tree_frame = ctk.CTkFrame(grades_card)
+            tree_frame.pack(fill="both", expand=True, padx=20, pady=(0, 20))
+            
+            style = ttk.Style()
+            style.configure("Student.Treeview",
+                          background="#ffffff",
+                          foreground="#111827",
+                          fieldbackground="#ffffff",
+                          rowheight=35,
+                          font=('Segoe UI', 11))
+            style.configure("Student.Treeview.Heading",
+                          background="#10b981",
+                          foreground="white",
+                          font=('Segoe UI', 12, 'bold'))
+            style.map('Student.Treeview',
+                     background=[('selected', '#d1fae5')],
+                     foreground=[('selected', '#065f46')])
+            
+            grades_tree = ttk.Treeview(
+                tree_frame,
+                columns=("Subject Code", "Subject Name", "Grade", "Status"),
+                show="headings",
+                height=8,
+                style="Student.Treeview"
+            )
+            
+            grades_tree.heading("Subject Code", text="Subject Code")
+            grades_tree.heading("Subject Name", text="Subject Name")
+            grades_tree.heading("Grade", text="Grade")
+            grades_tree.heading("Status", text="Status")
+            
+            grades_tree.column("Subject Code", width=120, anchor="center")
+            grades_tree.column("Subject Name", width=400)
+            grades_tree.column("Grade", width=100, anchor="center")
+            grades_tree.column("Status", width=150, anchor="center")
+            
+            for grade in grades_data:
+                grades_tree.insert("", "end", values=(
+                    grade['subject_code'],
+                    grade['subject_name'],
+                    grade['formatted_grade'],
+                    grade['description']
+                ))
+            
+            vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=grades_tree.yview)
+            grades_tree.configure(yscrollcommand=vsb.set)
+            
+            grades_tree.pack(side="left", fill="both", expand=True, padx=10, pady=10)
+            vsb.pack(side="right", fill="y", pady=10)
+            
+            # Performance Analysis
+            self.show_performance_analysis(scroll_frame, grades_data, gwa)
+        else:
+            ctk.CTkLabel(
+                grades_card,
+                text="No grades recorded yet",
+                font=ctk.CTkFont(size=14),
+                text_color="#6b7280"
+            ).pack(pady=30)
+        
+    def show_performance_analysis(self, parent, grades_data, gwa):
+        """Show performance analysis and recommendations"""
+        analysis_card = ctk.CTkFrame(parent, corner_radius=15)
+        analysis_card.pack(fill="x", pady=(0, 20), padx=10)
+        
+        ctk.CTkLabel(
+            analysis_card,
+            text="📊 Performance Analysis",
+            font=ctk.CTkFont(size=20, weight="bold")
+        ).pack(anchor="w", padx=20, pady=(20, 15))
+        
+        content_frame = ctk.CTkFrame(analysis_card, fg_color="transparent")
+        content_frame.pack(fill="both", expand=True, padx=20, pady=(0, 20))
+        
+        # Calculate statistics
+        total_subjects = len(grades_data)
+        excellent = len([g for g in grades_data if float(g['grade']) <= 1.75])
+        good = len([g for g in grades_data if 1.75 < float(g['grade']) <= 2.5])
+        satisfactory = len([g for g in grades_data if 2.5 < float(g['grade']) <= 3.0])
+        failed = len([g for g in grades_data if float(g['grade']) > 3.0])
+        
+        # Stats boxes
+        stats_container = ctk.CTkFrame(content_frame, fg_color="transparent")
+        stats_container.pack(fill="x", pady=(0, 20))
+        
+        self.create_stat_box_student(stats_container, "Total Subjects", str(total_subjects), "#3b82f6").pack(side="left", expand=True, fill="x", padx=5)
+        self.create_stat_box_student(stats_container, "Excellent", str(excellent), "#10b981").pack(side="left", expand=True, fill="x", padx=5)
+        self.create_stat_box_student(stats_container, "Good", str(good), "#3b82f6").pack(side="left", expand=True, fill="x", padx=5)
+        self.create_stat_box_student(stats_container, "Needs Improvement", str(satisfactory + failed), "#f59e0b").pack(side="left", expand=True, fill="x", padx=5)
+        
+        # Recommendations
+        recommendations = self.generate_recommendations(grades_data, gwa)
+        
+        if recommendations['strengths']:
+            strength_frame = ctk.CTkFrame(content_frame, fg_color=("#d1fae5", "#d1fae5"), corner_radius=10)
+            strength_frame.pack(fill="x", pady=(0, 10))
+            
+            ctk.CTkLabel(
+                strength_frame,
+                text="💪 Your Strengths",
+                font=ctk.CTkFont(size=15, weight="bold"),
+                text_color="#065f46"
+            ).pack(anchor="w", padx=15, pady=(15, 10))
+            
+            for strength in recommendations['strengths']:
+                ctk.CTkLabel(
+                    strength_frame,
+                    text=f"• {strength}",
+                    font=ctk.CTkFont(size=12),
+                    text_color="#047857",
+                    anchor="w"
+                ).pack(anchor="w", padx=15, pady=2)
+            
+            ctk.CTkLabel(strength_frame, text="").pack(pady=5)
+        
+        if recommendations['improvements']:
+            improve_frame = ctk.CTkFrame(content_frame, fg_color=("#fef3c7", "#fef3c7"), corner_radius=10)
+            improve_frame.pack(fill="x", pady=(0, 10))
+            
+            ctk.CTkLabel(
+                improve_frame,
+                text="📈 Areas for Improvement",
+                font=ctk.CTkFont(size=15, weight="bold"),
+                text_color="#92400e"
+            ).pack(anchor="w", padx=15, pady=(15, 10))
+            
+            for improvement in recommendations['improvements']:
+                ctk.CTkLabel(
+                    improve_frame,
+                    text=f"• {improvement}",
+                    font=ctk.CTkFont(size=12),
+                    text_color="#b45309",
+                    anchor="w"
+                ).pack(anchor="w", padx=15, pady=2)
+            
+            ctk.CTkLabel(improve_frame, text="").pack(pady=5)
+        
+        # Overall message
+        message_frame = ctk.CTkFrame(content_frame, fg_color=("#dbeafe", "#dbeafe"), corner_radius=10)
+        message_frame.pack(fill="x")
+        
+        ctk.CTkLabel(
+            message_frame,
+            text="💡 " + recommendations['message'],
+            font=ctk.CTkFont(size=13),
+            text_color="#1e40af",
+            wraplength=800,
+            justify="left"
+        ).pack(padx=15, pady=15)
+        
+    def create_stat_box_student(self, parent, title, value, color):
+        """Create a statistics box for student portal"""
+        box = ctk.CTkFrame(parent, fg_color=color, corner_radius=10)
+        
+        ctk.CTkLabel(
+            box,
+            text=title,
+            font=ctk.CTkFont(size=11),
+            text_color="white"
+        ).pack(pady=(12, 5))
+        
+        ctk.CTkLabel(
+            box,
+            text=value,
+            font=ctk.CTkFont(size=32, weight="bold"),
+            text_color="white"
+        ).pack(pady=(0, 12))
+        
+        return box
+        
+    def generate_recommendations(self, grades_data, gwa):
+        """Generate personalized recommendations"""
+        strengths = []
+        improvements = []
+        
+        # Analyze grades
+        excellent_subjects = [g for g in grades_data if float(g['grade']) <= 1.75]
+        weak_subjects = [g for g in grades_data if float(g['grade']) > 2.5]
+        
+        # Strengths
+        if excellent_subjects:
+            if len(excellent_subjects) >= len(grades_data) * 0.7:
+                strengths.append("Outstanding academic performance across most subjects!")
+            subject_names = ", ".join([g['subject_name'] for g in excellent_subjects[:3]])
+            strengths.append(f"Excelling in: {subject_names}")
+        
+        if gwa <= 1.75:
+            strengths.append("Your GWA qualifies you for academic honors - keep it up!")
+        
+        # Improvements
+        if weak_subjects:
+            subject_names = ", ".join([g['subject_name'] for g in weak_subjects[:3]])
+            improvements.append(f"Focus more on: {subject_names}")
+            improvements.append("Consider seeking help from teachers or study groups for challenging subjects")
+        
+        if gwa > 2.5:
+            improvements.append("Work on improving your overall GWA by focusing on weaker subjects")
+        
+        # Overall message
+        if gwa <= 1.75:
+            message = "Excellent work! You're performing at a very high level. Continue your excellent study habits and consider helping peers who might benefit from your knowledge."
+        elif gwa <= 2.5:
+            message = "Good job! You're doing well overall. With some extra effort in a few areas, you can achieve even better results. Keep up the consistent work!"
+        elif gwa <= 3.0:
+            message = "You're making satisfactory progress. Focus on strengthening your understanding in subjects where you're struggling. Don't hesitate to ask for help when needed."
+        else:
+            message = "It's important to address your academic challenges. Consider talking to your teachers about extra support, joining study groups, or adjusting your study methods."
+        
+        return {
+            'strengths': strengths,
+            'improvements': improvements,
+            'message': message
+        }
+        
+    def get_grade_description(self, grade: float) -> str:
+        """Get description for a grade"""
+        if grade == 0:
+            return "Not yet graded"
+        elif grade <= 1.75:
+            return "Excellent"
+        elif grade <= 2.5:
+            return "Good"
+        elif grade <= 3.0:
+            return "Satisfactory"
+        else:
+            return "Needs Improvement"
+            
+    def go_back(self):
+        """Go back to role selection"""
+        self.window.destroy()
+        
+    def run(self):
+        """Run the student portal"""
+        self.window.mainloop()
 
 
 def main():
@@ -1877,22 +2718,56 @@ def main():
     # Create API client
     api_client = APIClient()
     
-    # Show login window
-    print("Opening login window...")
-    login_window = LoginWindow(api_client)
-    success, user_data = login_window.run()
-    
-    if not success:
-        print("Login cancelled or failed. Exiting...")
-        return
-    
-    print(f"Login successful! Welcome, {user_data.get('full_name', 'User')}")
-    print(f"Role: {user_data.get('role', 'N/A')}")
-    print("Loading main application...\n")
-    
-    # Create and run main application
-    app = EduCoreApp(user_data)
-    app.run()
+    # Main application loop
+    while True:
+        # Show role selection
+        print("Opening role selection...")
+        role_window = RoleSelectionWindow()
+        selected_role = role_window.run()
+        
+        if not selected_role:
+            print("Application closed. Goodbye!")
+            break
+        
+        if selected_role == "teacher":
+            # Teacher/Admin flow
+            print("Opening teacher login window...")
+            login_window = LoginWindow(api_client)
+            success, user_data = login_window.run()
+            
+            if not success:
+                print("Login cancelled or failed. Returning to role selection...")
+                continue
+            
+            print(f"Login successful! Welcome, {user_data.get('full_name', 'User')}")
+            print(f"Role: {user_data.get('role', 'N/A')}")
+            print("Loading main menu...\n")
+            
+            # Show menu window and get selected feature
+            while True:
+                menu = MenuWindow(user_data, api_client)
+                selected_feature = menu.run()
+                
+                if not selected_feature:
+                    # User logged out or closed menu
+                    print("Logged out. Returning to role selection...")
+                    break
+                
+                print(f"Opening {selected_feature} module...\n")
+                
+                # Create and run main application with selected tab
+                app = EduCoreApp(user_data, initial_tab=selected_feature)
+                app.run()
+                
+                # After closing app, loop back to menu unless user exits
+                print("Returning to menu...\n")
+        
+        elif selected_role == "student":
+            # Student flow
+            print("Opening student portal...")
+            student_portal = StudentPortalWindow(api_client)
+            student_portal.run()
+            print("Student portal closed. Returning to role selection...")
     
     print("\nApplication closed. Goodbye!")
 
