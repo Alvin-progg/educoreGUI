@@ -1,12 +1,7 @@
-"""
-Pydantic schemas for request/response validation
-"""
 from pydantic import BaseModel, Field, validator
 from typing import List, Optional
 from datetime import datetime
 
-
-# ==================== Student Schemas ====================
 
 class StudentBase(BaseModel):
     student_code: str = Field(..., min_length=1, max_length=20, description="Unique student code")
@@ -29,17 +24,15 @@ class StudentResponse(StudentBase):
     updated_at: Optional[datetime]
     
     class Config:
-        from_attributes = True  # Pydantic v2
+        from_attributes = True
 
-
-# ==================== Course Schemas ====================
 
 class SubjectInfo(BaseModel):
     subject_code: str
     subject_name: str
     
     class Config:
-        from_attributes = True  # Pydantic v2
+        from_attributes = True
 
 
 class CourseResponse(BaseModel):
@@ -49,10 +42,8 @@ class CourseResponse(BaseModel):
     subjects: List[SubjectInfo] = []
     
     class Config:
-        from_attributes = True  # Pydantic v2
+        from_attributes = True
 
-
-# ==================== Grade Schemas ====================
 
 class GradeCreate(BaseModel):
     student_code: str = Field(..., description="Student code")
@@ -77,10 +68,8 @@ class GradeResponse(BaseModel):
     formatted_grade: str
     
     class Config:
-        from_attributes = True  # Pydantic v2
+        from_attributes = True
 
-
-# ==================== Report Schemas ====================
 
 class GWAReportResponse(BaseModel):
     student_code: str
@@ -90,8 +79,6 @@ class GWAReportResponse(BaseModel):
     description: str
     formatted_gwa: str
 
-
-# ==================== Auth Schemas ====================
 
 class LoginRequest(BaseModel):
     username: str = Field(..., min_length=3, max_length=50, description="Username")

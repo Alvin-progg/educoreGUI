@@ -1,21 +1,14 @@
-"""
-Test QR Code Generation
-Quick script to test QR code generation functionality
-"""
 import qrcode
 import os
 
 def test_qr_generation():
-    """Test generating a sample QR code"""
     print("Testing QR Code Generation...")
     print("=" * 50)
     
-    # Create qr_codes directory if it doesn't exist
     qr_dir = "../qr_codes"
     os.makedirs(qr_dir, exist_ok=True)
     print(f"✓ QR codes directory: {os.path.abspath(qr_dir)}")
     
-    # Test student data
     test_students = [
         {"code": "24-49051", "name": "John Doe"},
         {"code": "24-49052", "name": "Jane Smith"},
@@ -28,7 +21,6 @@ def test_qr_generation():
         student_code = student['code']
         student_name = student['name']
         
-        # Create QR code
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -38,10 +30,8 @@ def test_qr_generation():
         qr.add_data(student_code)
         qr.make(fit=True)
         
-        # Create image
         img = qr.make_image(fill_color="black", back_color="white")
         
-        # Save QR code
         filename = f"{student_code.replace('-', '_')}.png"
         filepath = os.path.join(qr_dir, filename)
         img.save(filepath)

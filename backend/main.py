@@ -1,7 +1,3 @@
-"""
-EduCore Academic Management System - Backend API
-FastAPI server for managing students, courses, and grades
-"""
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -19,10 +15,8 @@ from schemas import (
 from passlib.context import CryptContext
 from datetime import datetime
 
-# Create database tables
 Base.metadata.create_all(bind=engine)
 
-# Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 app = FastAPI(
@@ -31,7 +25,6 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# Configure CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -41,27 +34,20 @@ app.add_middleware(
 )
 
 
-# ==================== Authentication Helper Functions ====================
-
 def hash_password(password: str) -> str:
-    """Hash a password"""
     return pwd_context.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a password against its hash"""
     return pwd_context.verify(plain_password, hashed_password)
 
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize database with predefined courses"""
     db = next(get_db())
     
-    # Check if courses already exist
     existing_courses = db.query(Course).count()
     if existing_courses == 0:
-        # BSIT Course and Subjects
         bsit = Course(code="BSIT", name="Bachelor of Science in Information Technology")
         db.add(bsit)
         db.flush()
@@ -76,7 +62,6 @@ async def startup_event():
             CourseSubject(course_code="BSIT", subject_code="GEd 106", subject_name="Understanding the Self"),
         ]
         
-        # BSCS Course and Subjects
         bscs = Course(code="BSCS", name="Bachelor of Science in Computer Science")
         db.add(bscs)
         db.flush()
@@ -91,7 +76,6 @@ async def startup_event():
             CourseSubject(course_code="BSCS", subject_code="CS 202", subject_name="Object-Oriented Programming"),
         ]
         
-        # BSBA Course and Subjects
         bsba = Course(code="BSBA", name="Bachelor of Science in Business Administration")
         db.add(bsba)
         db.flush()
@@ -107,7 +91,6 @@ async def startup_event():
         db.add_all(bsit_subjects + bscs_subjects + bsba_subjects)
         db.commit()
     
-    # Create default admin user if no users exist
     existing_users = db.query(User).count()
     if existing_users == 0:
         default_admin = User(
@@ -129,12 +112,8 @@ async def startup_event():
     db.close()
 
 
-# ==================== Authentication Endpoints ====================
-
 @app.post("/api/auth/login", response_model=LoginResponse)
 def login(credentials: LoginRequest, db: Session = Depends(get_db)):
-    """User login endpoint"""
-    # Find user by username
     user = db.query(User).filter(User.username == credentials.username).first()
     
     if not user:
@@ -143,21 +122,18 @@ def login(credentials: LoginRequest, db: Session = Depends(get_db)):
             message="Invalid username or password"
         )
     
-    # Check if user is active
     if not user.is_active:
         return LoginResponse(
             success=False,
             message="Account is deactivated"
         )
     
-    # Verify password
     if not verify_password(credentials.password, user.password_hash):
         return LoginResponse(
             success=False,
             message="Invalid username or password"
         )
     
-    # Update last login
     user.last_login = datetime.now()
     db.commit()
     
@@ -175,29 +151,22 @@ def login(credentials: LoginRequest, db: Session = Depends(get_db)):
 
 @app.get("/api/auth/users", response_model=List[UserResponse])
 def get_all_users(db: Session = Depends(get_db)):
-    """Get all users (admin only in production)"""
     users = db.query(User).order_by(User.username).all()
     return users
 
 
-# ==================== Student Endpoints ====================
-
 @app.get("/api/students", response_model=List[StudentResponse])
 def get_all_students(db: Session = Depends(get_db)):
-    """Get all students with their GWA"""
     students = db.query(Student).order_by(Student.name).all()
     return students
 
 
 @app.post("/api/students", response_model=StudentResponse)
 def add_student(student: StudentCreate, db: Session = Depends(get_db)):
-    """Add a new student"""
-    # Check if student code already exists
     existing = db.query(Student).filter(Student.student_code == student.student_code).first()
     if existing:
         raise HTTPException(status_code=400, detail="Student code already exists")
     
-    # Check if course exists
     course = db.query(Course).filter(Course.code == student.course_code).first()
     if not course:
         raise HTTPException(status_code=400, detail="Course not found")
@@ -215,7 +184,6 @@ def add_student(student: StudentCreate, db: Session = Depends(get_db)):
 
 @app.get("/api/students/{student_code}", response_model=StudentResponse)
 def get_student(student_code: str, db: Session = Depends(get_db)):
-    """Get a specific student by code"""
     student = db.query(Student).filter(Student.student_code == student_code).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
@@ -224,12 +192,10 @@ def get_student(student_code: str, db: Session = Depends(get_db)):
 
 @app.put("/api/students/{student_code}", response_model=StudentResponse)
 def update_student(student_code: str, student_update: StudentUpdate, db: Session = Depends(get_db)):
-    """Update student's course"""
     student = db.query(Student).filter(Student.student_code == student_code).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
     
-    # Check if course exists
     course = db.query(Course).filter(Course.code == student_update.course_code).first()
     if not course:
         raise HTTPException(status_code=400, detail="Course not found")
@@ -242,43 +208,33 @@ def update_student(student_code: str, student_update: StudentUpdate, db: Session
 
 @app.delete("/api/students/{student_code}")
 def delete_student(student_code: str, db: Session = Depends(get_db)):
-    """Delete a student and all their grades"""
     student = db.query(Student).filter(Student.student_code == student_code).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
     
-    # Delete all grades for this student
     db.query(Grade).filter(Grade.student_code == student_code).delete()
     
-    # Delete student
     db.delete(student)
     db.commit()
     return {"message": "Student deleted successfully"}
 
 
-# ==================== Course Endpoints ====================
-
 @app.get("/api/courses", response_model=List[CourseResponse])
 def get_all_courses(db: Session = Depends(get_db)):
-    """Get all courses with their subjects"""
     courses = db.query(Course).order_by(Course.code).all()
     return courses
 
 
 @app.get("/api/courses/{course_code}/subjects")
 def get_course_subjects(course_code: str, db: Session = Depends(get_db)):
-    """Get all subjects for a specific course"""
     subjects = db.query(CourseSubject).filter(
         CourseSubject.course_code == course_code
     ).order_by(CourseSubject.subject_code).all()
     return subjects
 
 
-# ==================== Grade Endpoints ====================
-
 @app.get("/api/grades/{student_code}", response_model=List[GradeResponse])
 def get_student_grades(student_code: str, db: Session = Depends(get_db)):
-    """Get all grades for a specific student"""
     student = db.query(Student).filter(Student.student_code == student_code).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
@@ -287,7 +243,6 @@ def get_student_grades(student_code: str, db: Session = Depends(get_db)):
         Grade.student_code == student_code
     ).order_by(Grade.subject_code).all()
     
-    # Add formatted data
     result = []
     for grade in grades:
         result.append({
@@ -305,31 +260,25 @@ def get_student_grades(student_code: str, db: Session = Depends(get_db)):
 
 @app.post("/api/grades", response_model=GradeResponse)
 def add_grade(grade_data: GradeCreate, db: Session = Depends(get_db)):
-    """Add or update a grade for a student"""
-    # Verify student exists
     student = db.query(Student).filter(Student.student_code == grade_data.student_code).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
     
-    # Validate grade range
     if grade_data.grade < 1.0 or grade_data.grade > 5.0:
         raise HTTPException(status_code=400, detail="Grade must be between 1.0 and 5.0")
     
-    # Check if grade already exists for this student and subject
     existing_grade = db.query(Grade).filter(
         Grade.student_code == grade_data.student_code,
         Grade.subject_code == grade_data.subject_code
     ).first()
     
     if existing_grade:
-        # Update existing grade
         existing_grade.grade = grade_data.grade
         existing_grade.subject_name = grade_data.subject_name
         db.commit()
         db.refresh(existing_grade)
         grade_obj = existing_grade
     else:
-        # Create new grade
         new_grade = Grade(
             student_code=grade_data.student_code,
             subject_code=grade_data.subject_code,
@@ -341,7 +290,6 @@ def add_grade(grade_data: GradeCreate, db: Session = Depends(get_db)):
         db.refresh(new_grade)
         grade_obj = new_grade
     
-    # Update student's GWA
     update_student_gwa(grade_data.student_code, db)
     
     return {
@@ -355,11 +303,8 @@ def add_grade(grade_data: GradeCreate, db: Session = Depends(get_db)):
     }
 
 
-# ==================== Report Endpoints ====================
-
 @app.get("/api/gwa-report", response_model=List[GWAReportResponse])
 def get_gwa_report(db: Session = Depends(get_db)):
-    """Get GWA report for all students"""
     students = db.query(Student).order_by(Student.name).all()
     
     result = []
@@ -376,10 +321,7 @@ def get_gwa_report(db: Session = Depends(get_db)):
     return result
 
 
-# ==================== Helper Functions ====================
-
 def update_student_gwa(student_code: str, db: Session):
-    """Calculate and update GWA for a student"""
     from sqlalchemy import func
     
     avg_grade = db.query(func.avg(Grade.grade)).filter(
@@ -393,7 +335,6 @@ def update_student_gwa(student_code: str, db: Session):
 
 
 def get_grade_description(grade: float) -> str:
-    """Get description for a grade"""
     if grade == 0:
         return "Not yet graded"
     elif grade == 1.0:
@@ -409,29 +350,22 @@ def get_grade_description(grade: float) -> str:
 
 
 def format_grade(grade: float) -> str:
-    """Format grade for display"""
     if grade == 0:
         return "N/A"
     return f"{grade:.2f}"
 
 
-# ==================== Analytics Endpoints ====================
-
 @app.get("/api/analytics/overview")
 def get_analytics_overview(db: Session = Depends(get_db)):
-    """Get overview statistics for analytics dashboard"""
     from sqlalchemy import func
     
-    # Total counts
     total_students = db.query(Student).count()
     total_courses = db.query(Course).count()
     total_grades = db.query(Grade).count()
     
-    # Average GWA across all students
     avg_gwa = db.query(func.avg(Student.gwa)).filter(Student.gwa > 0).scalar()
     avg_gwa = round(float(avg_gwa), 2) if avg_gwa else 0.0
     
-    # Students per course
     students_per_course = db.query(
         Student.course_code,
         func.count(Student.id).label('count')
@@ -442,7 +376,6 @@ def get_analytics_overview(db: Session = Depends(get_db)):
         for course, count in students_per_course
     ]
     
-    # Grade distribution
     grade_ranges = [
         {"range": "1.0 (Excellent)", "min": 1.0, "max": 1.0},
         {"range": "1.25-1.75 (Very Good)", "min": 1.25, "max": 1.75},
@@ -462,7 +395,6 @@ def get_analytics_overview(db: Session = Depends(get_db)):
             "count": count
         })
     
-    # Top performers (students with GWA <= 1.75)
     top_performers = db.query(Student).filter(
         Student.gwa > 0,
         Student.gwa <= 1.75
@@ -478,7 +410,6 @@ def get_analytics_overview(db: Session = Depends(get_db)):
         for s in top_performers
     ]
     
-    # GWA per course
     gwa_per_course = db.query(
         Student.course_code,
         func.avg(Student.gwa).label('avg_gwa')
@@ -503,7 +434,6 @@ def get_analytics_overview(db: Session = Depends(get_db)):
 
 @app.get("/")
 def root():
-    """Root endpoint"""
     return {
         "message": "EduCore Academic Management System API",
         "version": "2.0.0",

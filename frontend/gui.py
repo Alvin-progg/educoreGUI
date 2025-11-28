@@ -1,7 +1,3 @@
-"""
-EduCore Academic Management System - Modern GUI
-Custom Tkinter Desktop Application
-"""
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import messagebox, ttk
@@ -10,7 +6,7 @@ from typing import List, Dict, Optional
 import threading
 import json
 import matplotlib
-matplotlib.use('Agg')  # Use non-interactive backend
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from PIL import Image, ImageTk
@@ -21,20 +17,16 @@ from pyzbar.pyzbar import decode
 import os
 import numpy as np
 
-# Configure CustomTkinter appearance
 ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
 
 class APIClient:
-    """API Client for communicating with FastAPI backend"""
-    
     def __init__(self, base_url="http://localhost:8000/api"):
         self.base_url = base_url
         self.timeout = 10
     
     def get(self, endpoint):
-        """Send GET request"""
         try:
             response = requests.get(f"{self.base_url}{endpoint}", timeout=self.timeout)
             response.raise_for_status()
@@ -43,7 +35,6 @@ class APIClient:
             return {'error': str(e)}
     
     def post(self, endpoint, data):
-        """Send POST request"""
         try:
             response = requests.post(f"{self.base_url}{endpoint}", json=data, timeout=self.timeout)
             response.raise_for_status()
@@ -52,7 +43,6 @@ class APIClient:
             return {'error': str(e)}
     
     def put(self, endpoint, data):
-        """Send PUT request"""
         try:
             response = requests.put(f"{self.base_url}{endpoint}", json=data, timeout=self.timeout)
             response.raise_for_status()
@@ -61,7 +51,6 @@ class APIClient:
             return {'error': str(e)}
     
     def delete(self, endpoint):
-        """Send DELETE request"""
         try:
             response = requests.delete(f"{self.base_url}{endpoint}", timeout=self.timeout)
             response.raise_for_status()
@@ -71,8 +60,6 @@ class APIClient:
 
 
 class ModernButton(ctk.CTkButton):
-    """Custom styled button with modern design"""
-    
     def __init__(self, master, **kwargs):
         super().__init__(
             master,
@@ -84,8 +71,6 @@ class ModernButton(ctk.CTkButton):
 
 
 class ModernEntry(ctk.CTkEntry):
-    """Custom styled entry with modern design"""
-    
     def __init__(self, master, **kwargs):
         super().__init__(
             master,
@@ -98,25 +83,19 @@ class ModernEntry(ctk.CTkEntry):
 
 
 class RoleSelectionWindow:
-    """Role selection window - Teacher or Student"""
-    
     def __init__(self):
         self.selected_role = None
         
-        # Create role selection window
         self.window = ctk.CTk()
         self.window.geometry("600x650")
         self.window.title("EduCore - Welcome")
         self.window.resizable(False, False)
         
-        # Center the window
         self.center_window()
         
-        # Create UI
         self.create_role_selection_ui()
         
     def center_window(self):
-        """Center the window on screen"""
         self.window.update_idletasks()
         width = self.window.winfo_width()
         height = self.window.winfo_height()
@@ -125,12 +104,9 @@ class RoleSelectionWindow:
         self.window.geometry(f'{width}x{height}+{x}+{y}')
         
     def create_role_selection_ui(self):
-        """Create role selection interface"""
-        # Main container
         main_frame = ctk.CTkFrame(self.window, fg_color="transparent")
         main_frame.pack(fill="both", expand=True, padx=40, pady=40)
         
-        # Header
         header_frame = ctk.CTkFrame(main_frame, fg_color=("#6366f1", "#6366f1"), corner_radius=20)
         header_frame.pack(fill="x", pady=(0, 40))
         
@@ -154,7 +130,6 @@ class RoleSelectionWindow:
             text_color="#e0e7ff"
         ).pack(pady=(5, 20))
         
-        # Selection frame
         selection_frame = ctk.CTkFrame(main_frame)
         selection_frame.pack(fill="both", expand=True)
         
@@ -164,7 +139,6 @@ class RoleSelectionWindow:
             font=ctk.CTkFont(size=22, weight="bold")
         ).pack(pady=(30, 40))
         
-        # Teacher button
         teacher_btn = ctk.CTkButton(
             selection_frame,
             text="👨‍🏫 Teacher / Admin",
@@ -184,7 +158,6 @@ class RoleSelectionWindow:
             text_color="#6b7280"
         ).pack(pady=(0, 20))
         
-        # Student button
         student_btn = ctk.CTkButton(
             selection_frame,
             text="👨‍🎓 Student",
@@ -205,38 +178,30 @@ class RoleSelectionWindow:
         ).pack(pady=(0, 30))
         
     def select_role(self, role):
-        """Handle role selection"""
         self.selected_role = role
         self.window.destroy()
         
     def run(self):
-        """Run the role selection window"""
         self.window.mainloop()
         return self.selected_role
 
 
 class LoginWindow:
-    """Login window for authentication"""
-    
     def __init__(self, api_client):
         self.api = api_client
         self.login_successful = False
         self.user_data = None
         
-        # Create login window
         self.window = ctk.CTk()
         self.window.geometry("550x800")
         self.window.title("EduCore - Teacher Login")
         self.window.resizable(False, False)
         
-        # Center the window
         self.center_window()
         
-        # Create UI
         self.create_login_ui()
         
     def center_window(self):
-        """Center the window on screen"""
         self.window.update_idletasks()
         width = self.window.winfo_width()
         height = self.window.winfo_height()
@@ -245,12 +210,9 @@ class LoginWindow:
         self.window.geometry(f'{width}x{height}+{x}+{y}')
         
     def create_login_ui(self):
-        """Create the login interface"""
-        # Main container
         main_frame = ctk.CTkFrame(self.window, fg_color="transparent")
         main_frame.pack(fill="both", expand=True, padx=40, pady=40)
         
-        # Logo/Title section
         title_frame = ctk.CTkFrame(main_frame, fg_color=("#6366f1", "#6366f1"), corner_radius=20)
         title_frame.pack(fill="x", pady=(0, 30))
         
@@ -274,7 +236,6 @@ class LoginWindow:
             text_color="#e0e7ff"
         ).pack(pady=(0, 20))
         
-        # Login form
         form_frame = ctk.CTkFrame(main_frame)
         form_frame.pack(fill="both", expand=True, pady=10)
         
@@ -284,7 +245,6 @@ class LoginWindow:
             font=ctk.CTkFont(size=24, weight="bold")
         ).pack(pady=(20, 30))
         
-        # Username
         ctk.CTkLabel(
             form_frame,
             text="Username",
@@ -359,7 +319,7 @@ class LoginWindow:
             self.password_entry.configure(show="•")
             
 
-            
+
     def login(self):
         """Handle login"""
         username = self.username_entry.get().strip()

@@ -1,23 +1,16 @@
-"""
-Generate QR Codes for Existing Students
-Run this script to generate QR codes for all students already in the database
-"""
 import requests
 import qrcode
 import os
 import sys
 
 def generate_qr_codes_for_existing_students():
-    """Generate QR codes for all existing students in the database"""
     print("=" * 60)
     print("  Generate QR Codes for Existing Students")
     print("=" * 60)
     print()
     
-    # API endpoint
     API_URL = "http://localhost:8000/api/students"
     
-    # QR codes directory
     script_dir = os.path.dirname(os.path.abspath(__file__))
     qr_dir = os.path.join(os.path.dirname(script_dir), "qr_codes")
     os.makedirs(qr_dir, exist_ok=True)
@@ -50,7 +43,6 @@ def generate_qr_codes_for_existing_students():
             student_code = student['student_code']
             student_name = student['name']
             
-            # Check if QR code already exists
             filename = f"{student_code.replace('-', '_')}.png"
             filepath = os.path.join(qr_dir, filename)
             
@@ -60,7 +52,6 @@ def generate_qr_codes_for_existing_students():
                 continue
             
             try:
-                # Create QR code
                 qr = qrcode.QRCode(
                     version=1,
                     error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -70,7 +61,6 @@ def generate_qr_codes_for_existing_students():
                 qr.add_data(student_code)
                 qr.make(fit=True)
                 
-                # Create and save image
                 img = qr.make_image(fill_color="black", back_color="white")
                 img.save(filepath)
                 
