@@ -358,6 +358,8 @@ class LoginWindow:
         else:
             self.password_entry.configure(show="•")
             
+
+            
     def login(self):
         """Handle login"""
         username = self.username_entry.get().strip()
