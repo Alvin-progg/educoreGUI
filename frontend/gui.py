@@ -306,9 +306,34 @@ class LoginWindow:
             fg_color="#6366f1",
             hover_color="#4f46e5"
         )
-        self.login_button.pack(fill="x", padx=40, pady=(10, 20))
+        self.login_button.pack(fill="x", padx=40, pady=(10, 10))
         
-        # Focus on username
+        register_frame = ctk.CTkFrame(form_frame, fg_color="transparent")
+        register_frame.pack(pady=(0, 20))
+        
+        ctk.CTkLabel(
+            register_frame,
+            text="Don't have an account?",
+            font=ctk.CTkFont(size=11),
+            text_color="#6b7280"
+        ).pack(side="left", padx=(0, 5))
+        
+        register_btn = ctk.CTkButton(
+            register_frame,
+            text="Register as Teacher",
+            command=self.open_register,
+            width=140,
+            height=28,
+            corner_radius=8,
+            font=ctk.CTkFont(size=11, weight="bold"),
+            fg_color="transparent",
+            hover_color="#e0e7ff",
+            text_color="#6366f1",
+            border_width=2,
+            border_color="#6366f1"
+        )
+        register_btn.pack(side="left")
+        
         self.username_entry.focus()
         
     def toggle_password_visibility(self):
@@ -356,11 +381,329 @@ class LoginWindow:
     def show_error(self, message):
         """Show error message"""
         self.error_label.configure(text=message)
+    
+    def open_register(self):
+        self.window.withdraw()
+        register_window = RegisterWindow(self.api, self.window)
+        success = register_window.run()
+        if not self.window.winfo_exists():
+            return
+        if success:
+            messagebox.showinfo("Success", "Registration successful! Please login with your credentials.")
+        self.window.deiconify()
+        self.window.focus_force()
         
     def run(self):
         """Run the login window"""
         self.window.mainloop()
         return self.login_successful, self.user_data
+
+
+class RegisterWindow:
+    def __init__(self, api_client, parent_window=None):
+        self.api = api_client
+        self.parent_window = parent_window
+        self.registration_successful = False
+        
+        self.window = ctk.CTkToplevel() if parent_window else ctk.CTk()
+        self.window.geometry("550x1000")
+        self.window.title("EduCore - Teacher Registration")
+        self.window.resizable(False, False)
+        
+        if parent_window:
+            self.window.transient(parent_window)
+            self.window.grab_set()
+        
+        self.window.protocol("WM_DELETE_WINDOW", self.on_close)
+        
+        self.center_window()
+        self.create_register_ui()
+        
+    def center_window(self):
+        self.window.update_idletasks()
+        width = self.window.winfo_width()
+        height = self.window.winfo_height()
+        x = (self.window.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.window.winfo_screenheight() // 2) - (height // 2)
+        self.window.geometry(f'{width}x{height}+{x}+{y}')
+        
+    def create_register_ui(self):
+        main_frame = ctk.CTkFrame(self.window, fg_color="transparent")
+        main_frame.pack(fill="both", expand=True, padx=40, pady=40)
+        
+        title_frame = ctk.CTkFrame(main_frame, fg_color=("#10b981", "#10b981"), corner_radius=20)
+        title_frame.pack(fill="x", pady=(0, 30))
+        
+        ctk.CTkLabel(
+            title_frame,
+            text="👨‍🏫",
+            font=ctk.CTkFont(size=60)
+        ).pack(pady=(20, 10))
+        
+        ctk.CTkLabel(
+            title_frame,
+            text="Teacher Registration",
+            font=ctk.CTkFont(size=28, weight="bold"),
+            text_color="white"
+        ).pack()
+        
+        ctk.CTkLabel(
+            title_frame,
+            text="Create your teacher account",
+            font=ctk.CTkFont(size=14),
+            text_color="#d1fae5"
+        ).pack(pady=(0, 20))
+        
+        form_frame = ctk.CTkFrame(main_frame)
+        form_frame.pack(fill="both", expand=True, pady=10)
+        
+        ctk.CTkLabel(
+            form_frame,
+            text="Full Name",
+            font=ctk.CTkFont(size=13)
+        ).pack(anchor="w", padx=40, pady=(20, 5))
+        
+        self.fullname_entry = ModernEntry(
+            form_frame,
+            placeholder_text="Enter your full name",
+            height=40
+        )
+        self.fullname_entry.pack(fill="x", padx=40, pady=(0, 15))
+        
+        ctk.CTkLabel(
+            form_frame,
+            text="Username",
+            font=ctk.CTkFont(size=13)
+        ).pack(anchor="w", padx=40, pady=(0, 5))
+        
+        self.username_entry = ModernEntry(
+            form_frame,
+            placeholder_text="Letters, numbers, dots, hyphens, underscores",
+            height=40
+        )
+        self.username_entry.pack(fill="x", padx=40, pady=(0, 5))
+        
+        self.username_hint = ctk.CTkLabel(
+            form_frame,
+            text="✓ Only alphanumeric and . - _ allowed",
+            font=ctk.CTkFont(size=10),
+            text_color="#6b7280"
+        )
+        self.username_hint.pack(anchor="w", padx=40, pady=(0, 15))
+        
+        ctk.CTkLabel(
+            form_frame,
+            text="Password",
+            font=ctk.CTkFont(size=13)
+        ).pack(anchor="w", padx=40, pady=(0, 5))
+        
+        self.password_entry = ModernEntry(
+            form_frame,
+            placeholder_text="Min 8 chars, uppercase, lowercase, digit, special",
+            show="•",
+            height=40
+        )
+        self.password_entry.pack(fill="x", padx=40, pady=(0, 5))
+        
+        self.password_hints = ctk.CTkFrame(form_frame, fg_color="transparent")
+        self.password_hints.pack(anchor="w", padx=40, pady=(0, 15))
+        
+        self.hint_labels = {}
+        hints = [
+            ("length", "✗ At least 8 characters"),
+            ("upper", "✗ One uppercase letter"),
+            ("lower", "✗ One lowercase letter"),
+            ("digit", "✗ One digit"),
+            ("special", "✗ One special character (!@#$%^&*...)")
+        ]
+        
+        for key, text in hints:
+            label = ctk.CTkLabel(
+                self.password_hints,
+                text=text,
+                font=ctk.CTkFont(size=10),
+                text_color="#ef4444"
+            )
+            label.pack(anchor="w")
+            self.hint_labels[key] = label
+        
+        self.password_entry.bind("<KeyRelease>", self.validate_password_realtime)
+        
+        ctk.CTkLabel(
+            form_frame,
+            text="Confirm Password",
+            font=ctk.CTkFont(size=13)
+        ).pack(anchor="w", padx=40, pady=(0, 5))
+        
+        self.confirm_password_entry = ModernEntry(
+            form_frame,
+            placeholder_text="Re-enter your password",
+            show="•",
+            height=40
+        )
+        self.confirm_password_entry.pack(fill="x", padx=40, pady=(0, 5))
+        
+        self.show_password_var = tk.BooleanVar(value=False)
+        show_password_checkbox = ctk.CTkCheckBox(
+            form_frame,
+            text="Show passwords",
+            variable=self.show_password_var,
+            command=self.toggle_password_visibility,
+            font=ctk.CTkFont(size=11)
+        )
+        show_password_checkbox.pack(anchor="w", padx=40, pady=(0, 20))
+        
+        self.error_label = ctk.CTkLabel(
+            form_frame,
+            text="",
+            font=ctk.CTkFont(size=12),
+            text_color="red",
+            wraplength=400
+        )
+        self.error_label.pack(pady=(0, 10))
+        
+        self.register_button = ctk.CTkButton(
+            form_frame,
+            text="Register",
+            command=self.register,
+            height=45,
+            corner_radius=10,
+            font=ctk.CTkFont(size=15, weight="bold"),
+            fg_color="#10b981",
+            hover_color="#059669"
+        )
+        self.register_button.pack(fill="x", padx=40, pady=(10, 10))
+        
+        cancel_btn = ctk.CTkButton(
+            form_frame,
+            text="Cancel",
+            command=self.on_close,
+            height=40,
+            corner_radius=10,
+            font=ctk.CTkFont(size=13),
+            fg_color="#6b7280",
+            hover_color="#4b5563"
+        )
+        cancel_btn.pack(fill="x", padx=40, pady=(0, 20))
+        
+        self.fullname_entry.focus()
+    
+    def validate_password_realtime(self, event=None):
+        import re
+        password = self.password_entry.get()
+        
+        checks = {
+            "length": len(password) >= 8,
+            "upper": bool(re.search(r'[A-Z]', password)),
+            "lower": bool(re.search(r'[a-z]', password)),
+            "digit": bool(re.search(r'[0-9]', password)),
+            "special": bool(re.search(r'[!@#$%^&*(),.?\":{}|<>]', password))
+        }
+        
+        for key, is_valid in checks.items():
+            if is_valid:
+                text = self.hint_labels[key].cget("text").replace("✗", "✓")
+                self.hint_labels[key].configure(text=text, text_color="#10b981")
+            else:
+                text = self.hint_labels[key].cget("text").replace("✓", "✗")
+                self.hint_labels[key].configure(text=text, text_color="#ef4444")
+    
+    def toggle_password_visibility(self):
+        if self.show_password_var.get():
+            self.password_entry.configure(show="")
+            self.confirm_password_entry.configure(show="")
+        else:
+            self.password_entry.configure(show="•")
+            self.confirm_password_entry.configure(show="•")
+    
+    def register(self):
+        import re
+        fullname = self.fullname_entry.get().strip()
+        username = self.username_entry.get().strip()
+        password = self.password_entry.get()
+        confirm_password = self.confirm_password_entry.get()
+        
+        if not fullname or not username or not password:
+            self.show_error("Please fill in all fields")
+            return
+        
+        if len(username) < 3:
+            self.show_error("Username must be at least 3 characters")
+            return
+        
+        if not re.match(r'^[a-zA-Z0-9_.-]+$', username):
+            self.show_error("Username can only contain letters, numbers, dots, hyphens, and underscores")
+            return
+        
+        if len(password) < 8:
+            self.show_error("Password must be at least 8 characters")
+            return
+        
+        if not re.search(r'[A-Z]', password):
+            self.show_error("Password must contain at least one uppercase letter")
+            return
+        
+        if not re.search(r'[a-z]', password):
+            self.show_error("Password must contain at least one lowercase letter")
+            return
+        
+        if not re.search(r'[0-9]', password):
+            self.show_error("Password must contain at least one digit")
+            return
+        
+        if not re.search(r'[!@#$%^&*(),.?\":{}|<>]', password):
+            self.show_error("Password must contain at least one special character")
+            return
+        
+        if password != confirm_password:
+            self.show_error("Passwords do not match")
+            return
+        
+        self.register_button.configure(state="disabled", text="Registering...")
+        self.error_label.configure(text="")
+        
+        def do_register():
+            data = {
+                "username": username,
+                "password": password,
+                "full_name": fullname,
+                "role": "teacher"
+            }
+            result = self.api.post("/auth/register", data)
+            
+            if 'error' in result:
+                self.window.after(0, lambda: self.show_error(f"Connection error: {result['error']}"))
+                self.window.after(0, lambda: self.register_button.configure(state="normal", text="Register"))
+            elif 'id' in result:
+                self.registration_successful = True
+                self.window.after(0, self.window.destroy)
+            else:
+                if isinstance(result.get('detail'), list):
+                    error_msg = result['detail'][0].get('msg', 'Validation error')
+                elif isinstance(result.get('detail'), dict):
+                    error_msg = str(result['detail'])
+                else:
+                    error_msg = result.get('detail', 'Registration failed')
+                self.window.after(0, lambda msg=error_msg: self.show_error(msg))
+                self.window.after(0, lambda: self.register_button.configure(state="normal", text="Register"))
+        
+        threading.Thread(target=do_register, daemon=True).start()
+    
+    def show_error(self, message):
+        self.error_label.configure(text=message)
+    
+    def on_close(self):
+        self.registration_successful = False
+        if self.parent_window:
+            self.window.grab_release()
+        self.window.destroy()
+    
+    def run(self):
+        if self.parent_window:
+            self.window.wait_window()
+        else:
+            self.window.mainloop()
+        return self.registration_successful
 
 
 class MenuWindow:
@@ -1442,7 +1785,14 @@ Grade Scale:
     def refresh_students(self):
         """Refresh students list"""
         def refresh():
-            result = self.api.get("/students")
+            teacher_id = self.user_data.get('id')
+            role = self.user_data.get('role')
+            
+            if role == 'admin':
+                result = self.api.get(f"/students?role=admin")
+            else:
+                result = self.api.get(f"/students?teacher_id={teacher_id}&role={role}")
+            
             if 'error' not in result:
                 self.students = result
                 self.root.after(0, self.update_students_tree)
@@ -1488,7 +1838,8 @@ Grade Scale:
             data = {
                 'student_code': student_code,
                 'name': name,
-                'course_code': course
+                'course_code': course,
+                'teacher_id': self.user_data.get('id')
             }
             result = self.api.post("/students", data)
             

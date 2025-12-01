@@ -11,11 +11,13 @@ class Student(Base):
     student_code = Column(String(20), unique=True, nullable=False, index=True)
     name = Column(String(100), nullable=False)
     course_code = Column(String(20), ForeignKey("courses.code"), nullable=False)
+    teacher_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     gwa = Column(Float, default=0.0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     course = relationship("Course", back_populates="students")
+    teacher = relationship("User", back_populates="students")
     grades = relationship("Grade", back_populates="student", cascade="all, delete-orphan")
     
     def __repr__(self):
@@ -84,10 +86,12 @@ class User(Base):
     username = Column(String(50), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
     full_name = Column(String(100), nullable=False)
-    role = Column(String(20), default="user")
+    role = Column(String(20), default="teacher")
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     last_login = Column(DateTime(timezone=True))
+    
+    students = relationship("Student", back_populates="teacher")
     
     def __repr__(self):
         return f"<User(username='{self.username}', role='{self.role}')>"

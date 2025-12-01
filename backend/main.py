@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 import uvicorn
 
 from database import engine, get_db
@@ -10,7 +10,7 @@ from schemas import (
     StudentCreate, StudentUpdate, StudentResponse,
     GradeCreate, GradeResponse,
     CourseResponse, GWAReportResponse,
-    LoginRequest, LoginResponse, UserResponse
+    LoginRequest, LoginResponse, UserResponse, UserCreate
 )
 from passlib.context import CryptContext
 from datetime import datetime
@@ -95,7 +95,7 @@ async def startup_event():
     if existing_users == 0:
         default_admin = User(
             username="admin",
-            password_hash=hash_password("admin123"),
+            password_hash=hash_password("Admin@123"),
             full_name="System Administrator",
             role="admin",
             is_active=True
@@ -105,7 +105,7 @@ async def startup_event():
         print("=" * 60)
         print("DEFAULT ADMIN USER CREATED")
         print("Username: admin")
-        print("Password: admin123")
+        print("Password: Admin@123")
         print("PLEASE CHANGE THE PASSWORD AFTER FIRST LOGIN!")
         print("=" * 60)
     
@@ -152,12 +152,57 @@ def login(credentials: LoginRequest, db: Session = Depends(get_db)):
 @app.get("/api/auth/users", response_model=List[UserResponse])
 def get_all_users(db: Session = Depends(get_db)):
     users = db.query(User).order_by(User.username).all()
-    return users
+    result = []
+    for user in users:
+        user_dict = {
+            "id": user.id,
+            "username": user.username,
+            "full_name": user.full_name,
+            "role": user.role,
+            "is_active": user.is_active,
+            "created_at": user.created_at,
+            "last_login": user.last_login,
+            "student_count": db.query(Student).filter(Student.teacher_id == user.id).count()
+        }
+        result.append(user_dict)
+    return result
+
+
+@app.post("/api/auth/register", response_model=UserResponse)
+def register_teacher(user_data: UserCreate, db: Session = Depends(get_db)):
+    existing = db.query(User).filter(User.username == user_data.username).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Username already exists")
+    
+    new_user = User(
+        username=user_data.username,
+        password_hash=hash_password(user_data.password),
+        full_name=user_data.full_name,
+        role=user_data.role,
+        is_active=True
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    
+    return {
+        "id": new_user.id,
+        "username": new_user.username,
+        "full_name": new_user.full_name,
+        "role": new_user.role,
+        "is_active": new_user.is_active,
+        "created_at": new_user.created_at,
+        "last_login": new_user.last_login,
+        "student_count": 0
+    }
 
 
 @app.get("/api/students", response_model=List[StudentResponse])
-def get_all_students(db: Session = Depends(get_db)):
-    students = db.query(Student).order_by(Student.name).all()
+def get_all_students(teacher_id: Optional[int] = None, role: Optional[str] = None, db: Session = Depends(get_db)):
+    query = db.query(Student)
+    if teacher_id and role != "admin":
+        query = query.filter(Student.teacher_id == teacher_id)
+    students = query.order_by(Student.name).all()
     return students
 
 
@@ -171,10 +216,16 @@ def add_student(student: StudentCreate, db: Session = Depends(get_db)):
     if not course:
         raise HTTPException(status_code=400, detail="Course not found")
     
+    if student.teacher_id:
+        teacher = db.query(User).filter(User.id == student.teacher_id).first()
+        if not teacher:
+            raise HTTPException(status_code=400, detail="Teacher not found")
+    
     new_student = Student(
         student_code=student.student_code,
         name=student.name,
-        course_code=student.course_code
+        course_code=student.course_code,
+        teacher_id=student.teacher_id
     )
     db.add(new_student)
     db.commit()

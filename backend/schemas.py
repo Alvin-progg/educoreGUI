@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, field_validator
 from typing import List, Optional
 from datetime import datetime
+import re
 
 
 class StudentBase(BaseModel):
@@ -10,7 +11,7 @@ class StudentBase(BaseModel):
 
 
 class StudentCreate(StudentBase):
-    pass
+    teacher_id: Optional[int] = Field(None, description="Teacher ID")
 
 
 class StudentUpdate(BaseModel):
@@ -19,6 +20,7 @@ class StudentUpdate(BaseModel):
 
 class StudentResponse(StudentBase):
     id: int
+    teacher_id: Optional[int] = None
     gwa: float
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
@@ -82,7 +84,31 @@ class GWAReportResponse(BaseModel):
 
 class LoginRequest(BaseModel):
     username: str = Field(..., min_length=3, max_length=50, description="Username")
-    password: str = Field(..., min_length=4, description="Password")
+    password: str = Field(..., min_length=8, description="Password")
+    
+    @field_validator('username')
+    @classmethod
+    def validate_username(cls, v):
+        if not re.match(r'^[a-zA-Z0-9_.-]+$', v):
+            raise ValueError('Username can only contain letters, numbers, dots, hyphens, and underscores')
+        if v.startswith('.') or v.startswith('-'):
+            raise ValueError('Username cannot start with dot or hyphen')
+        return v
+    
+    @field_validator('password')
+    @classmethod
+    def validate_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        if not re.search(r'[A-Z]', v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not re.search(r'[a-z]', v):
+            raise ValueError('Password must contain at least one lowercase letter')
+        if not re.search(r'[0-9]', v):
+            raise ValueError('Password must contain at least one digit')
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', v):
+            raise ValueError('Password must contain at least one special character')
+        return v
 
 
 class LoginResponse(BaseModel):
@@ -99,6 +125,36 @@ class UserResponse(BaseModel):
     is_active: bool
     created_at: Optional[datetime]
     last_login: Optional[datetime]
+    student_count: Optional[int] = 0
     
     class Config:
         from_attributes = True
+
+
+class UserCreate(BaseModel):
+    username: str = Field(..., min_length=3, max_length=50)
+    password: str = Field(..., min_length=8)
+    full_name: str = Field(..., min_length=1, max_length=100)
+    role: str = Field(default="teacher")
+    
+    @field_validator('username')
+    @classmethod
+    def validate_username(cls, v):
+        if not re.match(r'^[a-zA-Z0-9_.-]+$', v):
+            raise ValueError('Username can only contain letters, numbers, dots, hyphens, and underscores')
+        return v
+    
+    @field_validator('password')
+    @classmethod
+    def validate_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        if not re.search(r'[A-Z]', v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not re.search(r'[a-z]', v):
+            raise ValueError('Password must contain at least one lowercase letter')
+        if not re.search(r'[0-9]', v):
+            raise ValueError('Password must contain at least one digit')
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', v):
+            raise ValueError('Password must contain at least one special character')
+        return v
